@@ -47,26 +47,27 @@ export const GRADE_COLORS: Record<Grade, string> = {
 };
 
 export async function fetchProfiles(grade?: Grade) {
-  let query = supabase.from("profiles").select("*");
+  let query = supabase.from("profiles_public" as any).select("*");
   if (grade) {
     query = query.eq("grade", grade);
   }
   const { data, error } = await query.order("nom");
   if (error) throw error;
-  return data as Profile[];
+  return (data as unknown) as Profile[];
 }
 
 export async function fetchStats() {
-  const { data, error } = await supabase.from("profiles").select("sexe, grade");
+  const { data, error } = await supabase.from("profiles_public" as any).select("sexe, grade");
   if (error) throw error;
 
-  const total = data.length;
-  const hommes = data.filter((p) => p.sexe === "Homme").length;
-  const femmes = data.filter((p) => p.sexe === "Femme").length;
+  const rows = (data as unknown) as { sexe: string; grade: string }[];
+  const total = rows.length;
+  const hommes = rows.filter((p) => p.sexe === "Homme").length;
+  const femmes = rows.filter((p) => p.sexe === "Femme").length;
 
   const gradeCount: Record<string, number> = {};
   GRADES.forEach((g) => {
-    gradeCount[g] = data.filter((p) => p.grade === g).length;
+    gradeCount[g] = rows.filter((p) => p.grade === g).length;
   });
 
   return { total, hommes, femmes, gradeCount };

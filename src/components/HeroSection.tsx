@@ -1,6 +1,11 @@
+import { useNavigate } from "react-router-dom";
+import { UserPlus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import logoRenamci from "@/assets/logo-renamci.png";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <header className="gradient-header py-12 px-4 text-center">
       <div className="max-w-4xl mx-auto flex flex-col items-center gap-4 animate-fade-in">
@@ -21,6 +26,14 @@ const HeroSection = () => {
         <p className="text-primary-foreground/70 text-sm font-sans max-w-lg">
           Annuaire officiel des membres — Trombinoscope
         </p>
+        <Button
+          onClick={() => navigate("/inscription")}
+          className="mt-4 bg-accent text-accent-foreground hover:bg-accent/90 font-sans gap-2"
+          size="lg"
+        >
+          <UserPlus className="w-5 h-5" />
+          S'inscrire dans l'annuaire
+        </Button>
       </div>
     </header>
   );
