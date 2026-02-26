@@ -109,7 +109,78 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          adresse: string | null
+          contact: string | null
+          created_at: string | null
+          direction: string | null
+          domaines_expertise: string | null
+          email: string | null
+          fonction: string | null
+          formation_initiale: string | null
+          grade: Database["public"]["Enums"]["grade_type"] | null
+          id: string | null
+          ministere: string | null
+          nom: string | null
+          photo_url: string | null
+          prenoms: string | null
+          profession: string | null
+          promotion_ena: string | null
+          sexe: Database["public"]["Enums"]["sex_type"] | null
+          specialisation_ena: string | null
+          updated_at: string | null
+          user_id: string | null
+          valeurs: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          contact?: string | null
+          created_at?: string | null
+          direction?: string | null
+          domaines_expertise?: string | null
+          email?: string | null
+          fonction?: string | null
+          formation_initiale?: string | null
+          grade?: Database["public"]["Enums"]["grade_type"] | null
+          id?: string | null
+          ministere?: string | null
+          nom?: string | null
+          photo_url?: string | null
+          prenoms?: string | null
+          profession?: string | null
+          promotion_ena?: string | null
+          sexe?: Database["public"]["Enums"]["sex_type"] | null
+          specialisation_ena?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valeurs?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          contact?: string | null
+          created_at?: string | null
+          direction?: string | null
+          domaines_expertise?: string | null
+          email?: string | null
+          fonction?: string | null
+          formation_initiale?: string | null
+          grade?: Database["public"]["Enums"]["grade_type"] | null
+          id?: string | null
+          ministere?: string | null
+          nom?: string | null
+          photo_url?: string | null
+          prenoms?: string | null
+          profession?: string | null
+          promotion_ena?: string | null
+          sexe?: Database["public"]["Enums"]["sex_type"] | null
+          specialisation_ena?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          valeurs?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
