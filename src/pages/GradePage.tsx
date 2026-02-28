@@ -56,7 +56,7 @@ const GradePage = () => {
       </div>
 
       {/* Search */}
-      <div className="max-w-5xl mx-auto px-4 -mt-5">
+      <div className="max-w-3xl mx-auto px-4 -mt-5">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
           <Input
@@ -105,6 +105,11 @@ const GradePage = () => {
         profile={selectedProfile}
         open={!!selectedProfile}
         onClose={() => setSelectedProfile(null)}
+        onProfileChanged={() => {
+          setSelectedProfile(null);
+          // Refetch handled by react-query invalidation
+          window.location.reload();
+        }}
       />
     </div>
   );
