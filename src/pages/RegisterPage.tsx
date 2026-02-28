@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, UserPlus, Eye, EyeOff, Camera, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,9 @@ const RegisterPage = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState({
     nom: "",
@@ -36,6 +39,17 @@ const RegisterPage = () => {
     password: "",
     confirmPassword: "",
   });
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Erreur", description: "La photo ne doit pas dépasser 5 Mo.", variant: "destructive" });
+      return;
+    }
+    setPhotoFile(file);
+    setPhotoPreview(URL.createObjectURL(file));
+  };
 
   const updateField = (field: string, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -66,8 +80,21 @@ const RegisterPage = () => {
         cleaned[k] = typeof v === "string" && v.trim() === "" && k !== "nom" && k !== "prenoms" && k !== "password" ? null : v;
       }
 
+      // Upload photo if provided
+      let photo_url: string | null = null;
+      if (photoFile) {
+        const ext = photoFile.name.split(".").pop();
+        const fileName = `${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("avatars")
+          .upload(fileName, photoFile, { contentType: photoFile.type });
+        if (uploadError) throw new Error("Erreur lors de l'upload de la photo");
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(fileName);
+        photo_url = urlData.publicUrl;
+      }
+
       const { data, error } = await supabase.functions.invoke("register-profile", {
-        body: cleaned,
+        body: { ...cleaned, photo_url },
       });
 
       if (error || data?.error) {
@@ -109,6 +136,31 @@ const RegisterPage = () => {
         <div className="glass-card rounded-xl p-6 space-y-4">
           <h2 className="font-serif text-lg font-semibold text-foreground">Informations obligatoires</h2>
           
+          {/* Photo picker */}
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="relative w-28 h-28 rounded-full overflow-hidden bg-muted border-4 border-primary/30 flex items-center justify-center group hover:border-primary/60 transition-colors"
+            >
+              {photoPreview ? (
+                <img src={photoPreview} alt="Aperçu" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-12 h-12 text-muted-foreground/40" />
+              )}
+              <div className="absolute inset-0 bg-foreground/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera className="w-6 h-6 text-primary-foreground" />
+              </div>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+          </div>
+          <p className="text-center text-xs text-muted-foreground font-sans">Cliquez pour ajouter une photo</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="nom">Nom *</Label>
