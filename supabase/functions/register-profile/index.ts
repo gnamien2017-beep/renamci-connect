@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,8 +16,8 @@ serve(async (req) => {
     const body = await req.json();
     const { password, ...profileData } = body;
 
-    if (!password || password.length < 4) {
-      return new Response(JSON.stringify({ error: "Le mot de passe doit contenir au moins 4 caractères" }), {
+    if (!password || password.length < 6) {
+      return new Response(JSON.stringify({ error: "Le mot de passe doit contenir au moins 6 caractères" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -29,14 +30,7 @@ serve(async (req) => {
       });
     }
 
-    // Hash password using Web Crypto API (SHA-256 + salt)
-    const salt = crypto.randomUUID();
-    const encoder = new TextEncoder();
-    const data = encoder.encode(salt + password);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-    const password_hash = `${salt}:${hashHex}`;
+    const password_hash = await bcrypt.hash(password);
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

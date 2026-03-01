@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, UserPlus, Eye, EyeOff, Camera, User } from "lucide-react";
+import { UserPlus, Eye, EyeOff, Camera, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,8 +62,8 @@ const RegisterPage = () => {
       toast({ title: "Erreur", description: "Nom, prénoms et grade sont obligatoires.", variant: "destructive" });
       return;
     }
-    if (form.password.length < 4) {
-      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 4 caractères.", variant: "destructive" });
+    if (form.password.length < 6) {
+      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 6 caractères.", variant: "destructive" });
       return;
     }
     if (form.password !== form.confirmPassword) {
@@ -114,13 +114,7 @@ const RegisterPage = () => {
     <div className="min-h-screen bg-background">
       <div className="gradient-header py-8 px-4">
         <div className="max-w-2xl mx-auto">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-4 font-sans text-sm transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Retour
-          </button>
+          
           <h1 className="text-3xl font-serif font-bold text-primary-foreground flex items-center gap-3">
             <UserPlus className="w-8 h-8" />
             Nouveau Membre
@@ -285,7 +279,7 @@ const RegisterPage = () => {
                   value={form.password}
                   onChange={(e) => updateField("password", e.target.value)}
                   required
-                  minLength={4}
+                  minLength={6}
                   maxLength={50}
                 />
                 <button
@@ -305,7 +299,7 @@ const RegisterPage = () => {
                 value={form.confirmPassword}
                 onChange={(e) => updateField("confirmPassword", e.target.value)}
                 required
-                minLength={4}
+                minLength={6}
                 maxLength={50}
               />
             </div>
