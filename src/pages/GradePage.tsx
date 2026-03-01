@@ -1,17 +1,21 @@
 import { useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useParams } from "react-router-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchProfiles, GRADE_LABELS, type Grade, type Profile } from "@/lib/supabase-helpers";
 import ProfileCard from "@/components/ProfileCard";
 import ProfileModal from "@/components/ProfileModal";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, Search } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const PAGE_SIZE = 20;
 
 const GradePage = () => {
   const { grade } = useParams<{ grade: string }>();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [page, setPage] = useState(1);
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ["profiles", grade],
@@ -34,18 +38,17 @@ const GradePage = () => {
     );
   }, [profiles, search]);
 
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when search changes
+  useMemo(() => setPage(1), [search]);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="gradient-header py-8 px-4">
         <div className="max-w-5xl mx-auto">
-          <button
-            onClick={() => navigate("/")}
-            className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground mb-4 font-sans text-sm transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Retour
-          </button>
           <h1 className="text-3xl font-serif font-bold text-primary-foreground">
             {GRADE_LABELS[grade as Grade] || grade}
           </h1>
@@ -89,15 +92,42 @@ const GradePage = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {filtered.map((profile) => (
-              <ProfileCard
-                key={profile.id}
-                profile={profile}
-                onClick={() => setSelectedProfile(profile)}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {paged.map((profile) => (
+                <ProfileCard
+                  key={profile.id}
+                  profile={profile}
+                  onClick={() => setSelectedProfile(profile)}
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={page <= 1}
+                  onClick={() => setPage(page - 1)}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-sm font-sans text-muted-foreground px-3">
+                  Page {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage(page + 1)}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -107,8 +137,9 @@ const GradePage = () => {
         onClose={() => setSelectedProfile(null)}
         onProfileChanged={() => {
           setSelectedProfile(null);
-          // Refetch handled by react-query invalidation
-          window.location.reload();
+          queryClient.invalidateQueries({ queryKey: ["profiles", grade] });
+          queryClient.invalidateQueries({ queryKey: ["stats"] });
+          queryClient.invalidateQueries({ queryKey: ["all-profiles"] });
         }}
       />
     </div>
