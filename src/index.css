@@ -138,7 +138,8 @@
   }
 
   .gradient-header {
-    background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--green-dark)));
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.85), hsl(var(--green-dark) / 0.9)),
+                url('/images/bg-renamci.png') center / cover no-repeat;
   }
 
   .gradient-gold {
