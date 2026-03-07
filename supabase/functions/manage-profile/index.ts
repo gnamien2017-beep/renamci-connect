@@ -1,25 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
-
-async function hashPassword(password: string, salt: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(salt + password);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
-}
-
-async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
-  const [salt, hash] = storedHash.split(":");
-  if (!salt || !hash) return false;
-  const computed = await hashPassword(password, salt);
-  return computed === hash;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -41,7 +27,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Fetch profile to verify password
     const { data: profile, error: fetchError } = await supabase
       .from("profiles")
       .select("id, password_hash")
@@ -55,7 +40,8 @@ serve(async (req) => {
       });
     }
 
-    const valid = await verifyPassword(password, profile.password_hash);
+    // Verify password using bcrypt
+    const valid = await bcrypt.compare(password, profile.password_hash);
     if (!valid) {
       return new Response(JSON.stringify({ error: "Mot de passe incorrect" }), {
         status: 403,
@@ -83,16 +69,18 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // Don't allow updating password_hash or id directly
       delete updates.id;
       delete updates.password_hash;
       delete updates.created_at;
 
-      // If new password provided, hash it
       if (updates.new_password) {
-        const salt = crypto.randomUUID();
-        const hash = await hashPassword(updates.new_password, salt);
-        updates.password_hash = `${salt}:${hash}`;
+        if (updates.new_password.length < 6) {
+          return new Response(JSON.stringify({ error: "Le nouveau mot de passe doit contenir au moins 6 caractères" }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        updates.password_hash = await bcrypt.hash(updates.new_password);
         delete updates.new_password;
       }
 
@@ -114,7 +102,6 @@ serve(async (req) => {
       });
     }
 
-    // Action: verify (just check password)
     if (action === "verify") {
       return new Response(JSON.stringify({ success: true, verified: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
