@@ -1,6 +1,7 @@
 import HeroSection from "@/components/HeroSection";
 import StatsSection from "@/components/StatsSection";
 import GradesSection from "@/components/GradesSection";
+import Footer from "@/components/Footer";
 
 const Index = () => {
   return (
@@ -8,9 +9,7 @@ const Index = () => {
       <HeroSection />
       <StatsSection />
       <GradesSection />
-      <footer className="py-6 text-center text-xs text-muted-foreground font-sans border-t border-border">
-        © {new Date().getFullYear()} RENAMCI — Réseau des Énarques Musulmans de Côte d'Ivoire
-      </footer>
+      <Footer />
     </div>
   );
 };
