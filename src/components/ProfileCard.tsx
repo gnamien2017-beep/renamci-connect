@@ -1,5 +1,7 @@
 import type { Profile } from "@/lib/supabase-helpers";
+import { GRADE_COLORS } from "@/lib/supabase-helpers";
 import { User } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ProfileCardProps {
   profile: Profile;
@@ -10,11 +12,17 @@ const ProfileCard = ({ profile, onClick }: ProfileCardProps) => {
   return (
     <button
       onClick={onClick}
-      className="glass-card rounded-xl overflow-hidden text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group w-full animate-scale-in"
+      className="glass-card rounded-xl overflow-hidden text-left transition-all duration-300 hover:shadow-lg hover:-translate-y-1 cursor-pointer group w-full animate-scale-in relative"
     >
+      {/* Shine effect on hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-tr from-transparent via-white/5 to-transparent" />
+
       {/* Green top band */}
-      <div className="gradient-header py-1.5 px-3 text-center">
+      <div className="gradient-header py-1.5 px-3 flex items-center justify-between">
         <p className="text-primary-foreground text-[10px] tracking-widest uppercase font-sans">RÉNAMCI</p>
+        <span className={`${GRADE_COLORS[profile.grade]} text-white text-[10px] font-bold px-2 py-0.5 rounded-full`}>
+          {profile.grade}
+        </span>
       </div>
 
       {/* Photo */}
@@ -35,7 +43,8 @@ const ProfileCard = ({ profile, onClick }: ProfileCardProps) => {
       {/* Info */}
       <div className="px-4 pb-4 text-center">
         <h3 className="font-serif font-semibold text-foreground text-sm truncate">
-          {profile.prenoms} {profile.nom}
+          <span className="uppercase">{profile.nom}</span>{" "}
+          <span className="capitalize">{profile.prenoms}</span>
         </h3>
         {profile.fonction && (
           <p className="text-xs text-accent mt-0.5 font-medium truncate">{profile.fonction}</p>

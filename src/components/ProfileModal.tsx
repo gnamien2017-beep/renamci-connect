@@ -1,9 +1,10 @@
 import { useState } from "react";
 import type { Profile } from "@/lib/supabase-helpers";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Phone, Mail, MapPin, Briefcase, GraduationCap, Building2, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { User, Phone, Mail, MapPin, Briefcase, GraduationCap, Building2, MoreVertical, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import EditProfileModal from "@/components/EditProfileModal";
@@ -21,6 +22,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface ProfileModalProps {
   profile: Profile | null;
@@ -82,6 +89,22 @@ const InfoRow = ({ icon: Icon, label, value, isPhone }: { icon: any; label: stri
   );
 };
 
+const ValeursBadges = ({ valeurs }: { valeurs: string }) => {
+  const items = valeurs.split(/[,\n]/).map(v => v.trim()).filter(Boolean);
+  return (
+    <div className="space-y-2">
+      <h3 className="font-serif text-base font-bold text-destructive uppercase tracking-wide">Valeurs :</h3>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((v, i) => (
+          <Badge key={i} variant="secondary" className="text-xs font-sans">
+            {v}
+          </Badge>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModalProps) => {
   const { toast } = useToast();
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -137,14 +160,32 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-lg p-0 overflow-hidden max-h-[90vh] overflow-y-auto border-none">
           {/* Green header band */}
-          <div className="gradient-header text-center py-3 px-4">
+          <div className="gradient-header text-center py-3 px-4 relative">
             <p className="text-primary-foreground font-serif text-sm tracking-widest uppercase">RÉNAMCI</p>
             {profile.fonction && (
               <p className="text-primary-foreground font-serif text-lg font-bold mt-0.5">{profile.fonction}</p>
             )}
+            {/* Actions menu — discret */}
+            <div className="absolute top-2 right-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleAction("edit")} className="gap-2 cursor-pointer">
+                    <Pencil className="w-4 h-4" /> Modifier
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleAction("delete")} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
+                    <Trash2 className="w-4 h-4" /> Supprimer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
-          {/* Photo + Ministry banner */}
+          {/* Photo + Info */}
           <div className="relative px-6 pt-2 pb-4">
             <div className="flex items-center gap-4">
               <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-primary/30 shrink-0 bg-muted flex items-center justify-center shadow-lg">
@@ -156,7 +197,8 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="font-serif text-xl font-bold text-foreground leading-tight">
-                  {profile.prenoms} {profile.nom}
+                  <span className="uppercase">{profile.nom}</span>{" "}
+                  <span className="capitalize">{profile.prenoms}</span>
                 </h2>
                 <p className="text-sm text-accent font-semibold mt-1">{profile.grade}</p>
                 {profile.ministere && (
@@ -169,17 +211,8 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
           </div>
 
           {/* Two-column layout */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-6 pb-4">
-            {profile.valeurs && (
-              <div className="space-y-2">
-                <h3 className="font-serif text-base font-bold text-destructive uppercase tracking-wide">Valeurs :</h3>
-                <div className="space-y-1">
-                  {profile.valeurs.split(/[,\n]/).map((v, i) => (
-                    <p key={i} className="text-sm text-foreground font-sans">{v.trim()}</p>
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-6 pb-6">
+            {profile.valeurs && <ValeursBadges valeurs={profile.valeurs} />}
             <div className="space-y-0.5">
               <InfoRow icon={Building2} label="Direction" value={profile.direction} />
               <InfoRow icon={Briefcase} label="Fonction" value={profile.fonction} />
@@ -192,16 +225,6 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
               <InfoRow icon={GraduationCap} label="Formation initiale" value={profile.formation_initiale} />
               <InfoRow icon={Briefcase} label="Domaines d'expertise" value={profile.domaines_expertise} />
             </div>
-          </div>
-
-          {/* Edit/Delete buttons */}
-          <div className="flex gap-2 px-6 pb-6">
-            <Button variant="outline" size="sm" className="flex-1 gap-2" onClick={() => handleAction("edit")}>
-              <Pencil className="w-4 h-4" /> Modifier
-            </Button>
-            <Button variant="destructive" size="sm" className="flex-1 gap-2" onClick={() => handleAction("delete")}>
-              <Trash2 className="w-4 h-4" /> Supprimer
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
