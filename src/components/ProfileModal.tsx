@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Profile } from "@/lib/supabase-helpers";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Phone, Mail, MapPin, Briefcase, GraduationCap, Building2, MoreVertical, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { User, Phone, Mail, MapPin, Briefcase, GraduationCap, Building2, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,12 +22,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface ProfileModalProps {
   profile: Profile | null;
@@ -165,24 +159,6 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
             {profile.fonction && (
               <p className="text-primary-foreground font-serif text-lg font-bold mt-0.5">{profile.fonction}</p>
             )}
-            {/* Actions menu — discret */}
-            <div className="absolute top-2 right-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleAction("edit")} className="gap-2 cursor-pointer">
-                    <Pencil className="w-4 h-4" /> Modifier
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAction("delete")} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
-                    <Trash2 className="w-4 h-4" /> Supprimer
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </div>
 
           {/* Photo + Info */}
@@ -225,6 +201,16 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
               <InfoRow icon={GraduationCap} label="Formation initiale" value={profile.formation_initiale} />
               <InfoRow icon={Briefcase} label="Domaines d'expertise" value={profile.domaines_expertise} />
             </div>
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-3 px-6 pb-6">
+            <Button variant="outline" className="flex-1 gap-2" onClick={() => handleAction("edit")}>
+              <Pencil className="w-4 h-4" /> Modifier
+            </Button>
+            <Button variant="destructive" className="flex-1 gap-2" onClick={() => handleAction("delete")}>
+              <Trash2 className="w-4 h-4" /> Supprimer
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
