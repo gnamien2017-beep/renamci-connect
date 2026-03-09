@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { Profile } from "@/lib/supabase-helpers";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Phone, Mail, MapPin, Briefcase, GraduationCap, Building2, MoreVertical, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { User, Phone, Mail, MapPin, Briefcase, GraduationCap, Building2, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
