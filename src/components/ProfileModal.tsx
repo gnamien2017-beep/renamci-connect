@@ -208,6 +208,16 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
               <InfoRow icon={Briefcase} label="Domaines d'expertise" value={profile.domaines_expertise} />
             </div>
           </div>
+
+          {/* Action buttons */}
+          <div className="flex gap-3 px-6 pb-6">
+            <Button variant="outline" className="flex-1 gap-2" onClick={() => handleAction("edit")}>
+              <Pencil className="w-4 h-4" /> Modifier
+            </Button>
+            <Button variant="destructive" className="flex-1 gap-2" onClick={() => handleAction("delete")}>
+              <Trash2 className="w-4 h-4" /> Supprimer
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
