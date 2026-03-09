@@ -165,24 +165,6 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
             {profile.fonction && (
               <p className="text-primary-foreground font-serif text-lg font-bold mt-0.5">{profile.fonction}</p>
             )}
-            {/* Actions menu — discret */}
-            <div className="absolute top-2 right-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-foreground/80 hover:text-primary-foreground hover:bg-white/10">
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => handleAction("edit")} className="gap-2 cursor-pointer">
-                    <Pencil className="w-4 h-4" /> Modifier
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleAction("delete")} className="gap-2 cursor-pointer text-destructive focus:text-destructive">
-                    <Trash2 className="w-4 h-4" /> Supprimer
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </div>
 
           {/* Photo + Info */}
