@@ -1,11 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { GRADES, GRADE_LABELS, GRADE_COLORS, fetchStats } from "@/lib/supabase-helpers";
-import { Users, GraduationCap } from "lucide-react";
+import { Users } from "lucide-react";
 
 const GradesSection = () => {
   const navigate = useNavigate();
-  const { data: stats } = useQuery({ queryKey: ["stats"], queryFn: fetchStats });
+  const { data: stats } = useQuery({
+    queryKey: ["stats"],
+    queryFn: fetchStats,
+  });
 
   return (
     <section className="py-16 px-4">
@@ -20,11 +23,10 @@ const GradesSection = () => {
               <button
                 key={grade}
                 onClick={() => navigate(`/grade/${grade}`)}
-                className={`grade-button ${GRADE_COLORS[grade]} animate-fade-in group`}
+                className={`grade-button ${GRADE_COLORS[grade]} animate-fade-in`}
                 style={{ animationDelay: `${i * 0.1}s` }}
               >
-                <GraduationCap className="w-8 h-8 mb-1 opacity-60 group-hover:opacity-100 transition-opacity relative z-10" />
-                <span className="relative z-10 drop-shadow-md text-lg">{grade}</span>
+                <span className="relative z-10 drop-shadow-md">{grade}</span>
                 <span className="block text-sm font-sans font-normal opacity-80 mt-1 relative z-10">
                   {GRADE_LABELS[grade]}
                 </span>

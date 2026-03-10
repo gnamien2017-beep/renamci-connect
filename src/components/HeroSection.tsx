@@ -1,20 +1,18 @@
-import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchStats } from "@/lib/supabase-helpers";
 import logoRenamci from "@/assets/logo-renamci.png";
 import AnimatedCounter from "@/components/AnimatedCounter";
 import { Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
-  const navigate = useNavigate();
   const { data: stats } = useQuery({
     queryKey: ["stats"],
     queryFn: fetchStats,
   });
 
   return (
-    <header className="gradient-header py-16 md:py-24 px-4 text-center relative overflow-hidden">
+    <header className="gradient-header py-16 md:py-20 px-4 text-center relative overflow-hidden">
+      {/* Subtle parallax overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/10 pointer-events-none" />
 
       <div className="max-w-4xl mx-auto flex flex-col items-center gap-5 animate-fade-in relative z-10">
@@ -33,9 +31,7 @@ const HeroSection = () => {
             Réseau des Énarques Musulmans de Côte d'Ivoire
           </p>
         </div>
-
-        {/* Bande décorative dorée */}
-        <div className="w-32 h-1 gradient-gold rounded-full" />
+        <div className="w-24 h-1 gradient-gold rounded-full" />
 
         {stats && stats.total > 0 ? (
           <div className="flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-5 py-2.5 border border-white/20">
@@ -52,25 +48,6 @@ const HeroSection = () => {
             Annuaire officiel des membres — Trombinoscope
           </p>
         )}
-
-        {/* Boutons CTA */}
-        <div className="flex flex-col sm:flex-row gap-3 mt-4">
-          <Button
-            size="lg"
-            className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-sans font-semibold px-8 shadow-lg"
-            onClick={() => navigate("/grade/A7")}
-          >
-            Explorer l'annuaire
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="border-2 border-[hsl(var(--gold))] text-[hsl(var(--gold))] hover:bg-[hsl(var(--gold))]/10 font-sans font-semibold px-8"
-            onClick={() => navigate("/inscription")}
-          >
-            Rejoindre RENAMCI
-          </Button>
-        </div>
       </div>
     </header>
   );
