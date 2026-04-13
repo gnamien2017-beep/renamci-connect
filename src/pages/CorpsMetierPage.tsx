@@ -4,7 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchProfilesByCorps,
   getCorpsById,
-  GRADE_COLORS,
+  CORPS_COLORS,
+  GRADE_COLORS_HEX,
   type Grade,
   type Profile,
 } from "@/lib/supabase-helpers";
@@ -17,12 +18,15 @@ import { Button } from "@/components/ui/button";
 const PAGE_SIZE = 20;
 
 const CorpsMetierPage = () => {
-  const { corpsId } = useParams<{ corpsId: string }>();
+  const { corpsId, grade } = useParams<{ corpsId: string; grade?: string }>();
   const queryClient = useQueryClient();
   const corps = getCorpsById(corpsId || "");
+  const corpsColor = CORPS_COLORS[corpsId || ""] || { bg: "#2d6a4f", text: "#ffffff" };
 
   const [search, setSearch] = useState("");
-  const [selectedGrade, setSelectedGrade] = useState<Grade | "all">("all");
+  const [selectedGrade, setSelectedGrade] = useState<Grade | "all">(
+    (grade as Grade) || "all"
+  );
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [page, setPage] = useState(1);
 
@@ -72,17 +76,22 @@ const CorpsMetierPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="gradient-header py-8 px-4">
+      <div
+        className="py-8 px-4"
+        style={{
+          background: `linear-gradient(135deg, ${corpsColor.bg}, ${corpsColor.bg}dd)`,
+        }}
+      >
         <div className="max-w-5xl mx-auto">
-          <h1 className="text-3xl font-serif font-bold text-primary-foreground">
+          <h1 className="text-3xl font-serif font-bold text-white uppercase">
             {corps.label}
           </h1>
           {corps.abbrev && (
-            <span className="text-primary-foreground/60 text-sm font-sans">
+            <span className="text-white/60 text-sm font-sans">
               ({corps.abbrev})
             </span>
           )}
-          <p className="text-primary-foreground/70 text-sm mt-1 font-sans">
+          <p className="text-white/70 text-sm mt-1 font-sans">
             {profiles?.length ?? 0} membre{(profiles?.length ?? 0) > 1 ? "s" : ""}
           </p>
         </div>
@@ -91,7 +100,6 @@ const CorpsMetierPage = () => {
       {/* Filters */}
       <div className="max-w-5xl mx-auto px-4 -mt-5">
         <div className="flex flex-col sm:flex-row gap-3">
-          {/* Search */}
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <Input
@@ -102,7 +110,6 @@ const CorpsMetierPage = () => {
             />
           </div>
 
-          {/* Grade filter */}
           <div className="flex gap-1.5 flex-wrap items-center">
             <button
               onClick={() => setSelectedGrade("all")}
@@ -114,19 +121,23 @@ const CorpsMetierPage = () => {
             >
               Tous
             </button>
-            {corps.grades.map((g) => (
-              <button
-                key={g}
-                onClick={() => setSelectedGrade(g)}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold font-sans transition-all ${
-                  selectedGrade === g
-                    ? `${GRADE_COLORS[g]} text-white shadow-md`
-                    : "bg-muted text-muted-foreground hover:bg-accent"
-                }`}
-              >
-                {g}
-              </button>
-            ))}
+            {corps.grades.map((g) => {
+              const gc = GRADE_COLORS_HEX[g];
+              return (
+                <button
+                  key={g}
+                  onClick={() => setSelectedGrade(g)}
+                  className="px-3 py-2 rounded-lg text-xs font-semibold font-sans transition-all"
+                  style={
+                    selectedGrade === g
+                      ? { background: gc.main, color: "#fff", boxShadow: `0 2px 8px ${gc.main}60` }
+                      : {}
+                  }
+                >
+                  {g}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
