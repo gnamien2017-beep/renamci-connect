@@ -145,6 +145,22 @@
   .gradient-gold {
     background: linear-gradient(135deg, hsl(var(--accent)), hsl(var(--gold-dark)));
   }
+
+  .corps-grade-btn {
+    @apply px-4 py-2 rounded-lg text-xs font-sans font-bold uppercase tracking-wide
+           transition-all duration-200 cursor-pointer border-0;
+    transform: translateY(0);
+  }
+
+  .corps-grade-btn:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+  }
+
+  .corps-grade-btn:active {
+    transform: translateY(1px);
+    box-shadow: none !important;
+  }
 }
 
 @layer utilities {
