@@ -46,8 +46,50 @@ export const GRADE_COLORS: Record<Grade, string> = {
   B3: "bg-grade-b3",
 };
 
+export type CorpsMetier = {
+  id: string;
+  label: string;
+  abbrev?: string;
+  ecole: "EGAD" | "EGEF";
+  grades: readonly Grade[];
+};
+
+export const CORPS_METIERS: CorpsMetier[] = [
+  // EGAD
+  { id: "diplomatie", label: "Diplomatie", ecole: "EGAD", grades: ["A4", "A5", "A6", "A7"] },
+  { id: "administration-generale", label: "Administration Générale", abbrev: "AG", ecole: "EGAD", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  { id: "affaires-maritimes", label: "Affaires Maritimes et Portuaires", abbrev: "AMP", ecole: "EGAD", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  { id: "travail-affaires-sociales", label: "Travail et Affaires Sociales", abbrev: "TAS", ecole: "EGAD", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  { id: "ressources-humaines", label: "Ressources Humaines", abbrev: "RH", ecole: "EGAD", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  // EGEF
+  { id: "impots", label: "Impôts", ecole: "EGEF", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  { id: "tresor", label: "Trésor", ecole: "EGEF", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  { id: "douanes", label: "Douanes", ecole: "EGEF", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  { id: "finances-generales", label: "Finances Générales", ecole: "EGEF", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  { id: "commerce", label: "Commerce", ecole: "EGEF", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+  { id: "sante", label: "Santé", ecole: "EGEF", grades: ["B3", "A3", "A4", "A5", "A6", "A7"] },
+];
+
+export function getCorpsById(id: string): CorpsMetier | undefined {
+  return CORPS_METIERS.find((c) => c.id === id);
+}
+
 export async function fetchProfiles(grade?: Grade) {
   let query = supabase.from("profiles_public" as any).select("*");
+  if (grade) {
+    query = query.eq("grade", grade);
+  }
+  const { data, error } = await query.order("nom");
+  if (error) throw error;
+  return (data as unknown) as Profile[];
+}
+
+export async function fetchProfilesByCorps(corpsId: string, grade?: Grade) {
+  const corps = getCorpsById(corpsId);
+  if (!corps) return [];
+  
+  let query = supabase.from("profiles_public" as any).select("*");
+  query = query.eq("specialisation_ena", corps.label);
   if (grade) {
     query = query.eq("grade", grade);
   }
