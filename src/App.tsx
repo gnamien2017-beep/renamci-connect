@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Index from "./pages/Index";
 import GradePage from "./pages/GradePage";
+import CorpsMetierPage from "./pages/CorpsMetierPage";
 import RegisterPage from "./pages/RegisterPage";
 import NotFound from "./pages/NotFound";
 
@@ -21,6 +22,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/grade/:grade" element={<GradePage />} />
+          <Route path="/corps/:corpsId" element={<CorpsMetierPage />} />
           <Route path="/inscription" element={<RegisterPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
