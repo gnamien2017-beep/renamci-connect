@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   fetchProfilesByCorps,
@@ -12,21 +12,19 @@ import {
 import ProfileCard from "@/components/ProfileCard";
 import ProfileModal from "@/components/ProfileModal";
 import { Input } from "@/components/ui/input";
-import { Search, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const PAGE_SIZE = 20;
 
 const CorpsMetierPage = () => {
   const { corpsId, grade } = useParams<{ corpsId: string; grade?: string }>();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const corps = getCorpsById(corpsId || "");
   const corpsColor = CORPS_COLORS[corpsId || ""] || { bg: "#2d6a4f", text: "#ffffff" };
 
   const [search, setSearch] = useState("");
-  const [selectedGrade, setSelectedGrade] = useState<Grade | "all">(
-    (grade as Grade) || "all"
-  );
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [page, setPage] = useState(1);
 
@@ -40,8 +38,8 @@ const CorpsMetierPage = () => {
     if (!profiles) return [];
     let result = profiles;
 
-    if (selectedGrade !== "all") {
-      result = result.filter((p) => p.grade === selectedGrade);
+    if (grade) {
+      result = result.filter((p) => p.grade === grade);
     }
 
     if (search.trim()) {
@@ -58,17 +56,80 @@ const CorpsMetierPage = () => {
     }
 
     return result;
-  }, [profiles, search, selectedGrade]);
+  }, [profiles, search, grade]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  useMemo(() => setPage(1), [search, selectedGrade]);
+  useMemo(() => setPage(1), [search, grade]);
 
   if (!corps) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Corps de métier introuvable.</p>
+      </div>
+    );
+  }
+
+  // If no grade selected, show grade selection screen
+  if (!grade) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div
+          className="py-8 px-4"
+          style={{
+            background: `linear-gradient(135deg, ${corpsColor.bg}, ${corpsColor.bg}dd)`,
+          }}
+        >
+          <div className="max-w-5xl mx-auto">
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-1 text-white/70 hover:text-white text-sm font-sans mb-3 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Retour
+            </button>
+            <h1 className="text-3xl font-serif font-bold text-white uppercase">
+              {corps.label}
+            </h1>
+            {corps.abbrev && (
+              <span className="text-white/60 text-sm font-sans">
+                ({corps.abbrev})
+              </span>
+            )}
+            <p className="text-white/70 text-sm mt-1 font-sans">
+              {profiles?.length ?? 0} membre{(profiles?.length ?? 0) > 1 ? "s" : ""}
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-5xl mx-auto px-4 py-12">
+          <h2 className="text-xl font-serif font-bold text-foreground text-center mb-8">
+            Sélectionnez un <span className="gold-accent">Grade</span>
+          </h2>
+          <div className="flex flex-wrap justify-center gap-4">
+            {corps.grades.map((g) => {
+              const gc = GRADE_COLORS_HEX[g];
+              const count = profiles?.filter((p) => p.grade === g).length ?? 0;
+              return (
+                <button
+                  key={g}
+                  onClick={() => navigate(`/corps/${corpsId}/${g}`)}
+                  className="corps-grade-btn"
+                  style={{
+                    background: `linear-gradient(145deg, ${gc.light}, ${gc.main})`,
+                    boxShadow: `0 6px 10px ${gc.main}40, 0 2px 0 ${gc.light}, inset 0 -3px 0 ${gc.dark}`,
+                    color: "#fff",
+                  }}
+                >
+                  {g}
+                  <span className="block text-[10px] font-normal opacity-80 mt-1">
+                    {count} membre{count > 1 ? "s" : ""}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
     );
   }
@@ -83,62 +144,31 @@ const CorpsMetierPage = () => {
         }}
       >
         <div className="max-w-5xl mx-auto">
+          <button
+            onClick={() => navigate(`/corps/${corpsId}`)}
+            className="flex items-center gap-1 text-white/70 hover:text-white text-sm font-sans mb-3 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" /> {corps.label}
+          </button>
           <h1 className="text-3xl font-serif font-bold text-white uppercase">
-            {corps.label}
+            {corps.label} — {grade}
           </h1>
-          {corps.abbrev && (
-            <span className="text-white/60 text-sm font-sans">
-              ({corps.abbrev})
-            </span>
-          )}
           <p className="text-white/70 text-sm mt-1 font-sans">
-            {profiles?.length ?? 0} membre{(profiles?.length ?? 0) > 1 ? "s" : ""}
+            {filtered.length} membre{filtered.length > 1 ? "s" : ""}
           </p>
         </div>
       </div>
 
-      {/* Filters */}
+      {/* Search */}
       <div className="max-w-5xl mx-auto px-4 -mt-5">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par nom, prénom, téléphone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-12 text-base glass-card border-border shadow-md"
-            />
-          </div>
-
-          <div className="flex gap-1.5 flex-wrap items-center">
-            <button
-              onClick={() => setSelectedGrade("all")}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold font-sans transition-all ${
-                selectedGrade === "all"
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-muted text-muted-foreground hover:bg-accent"
-              }`}
-            >
-              Tous
-            </button>
-            {corps.grades.map((g) => {
-              const gc = GRADE_COLORS_HEX[g];
-              return (
-                <button
-                  key={g}
-                  onClick={() => setSelectedGrade(g)}
-                  className="px-3 py-2 rounded-lg text-xs font-semibold font-sans transition-all"
-                  style={
-                    selectedGrade === g
-                      ? { background: gc.main, color: "#fff", boxShadow: `0 2px 8px ${gc.main}60` }
-                      : {}
-                  }
-                >
-                  {g}
-                </button>
-              );
-            })}
-          </div>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher par nom, prénom, téléphone..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 h-12 text-base glass-card border-border shadow-md"
+          />
         </div>
       </div>
 
@@ -159,9 +189,7 @@ const CorpsMetierPage = () => {
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <p className="text-muted-foreground font-sans">
-              {search || selectedGrade !== "all"
-                ? "Aucun résultat trouvé."
-                : "Aucun membre dans ce corps de métier."}
+              {search ? "Aucun résultat trouvé." : "Aucun membre dans ce grade."}
             </p>
           </div>
         ) : (
