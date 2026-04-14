@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { GRADES, GRADE_LABELS } from "@/lib/supabase-helpers";
+import { GRADES, GRADE_LABELS, CORPS_METIERS } from "@/lib/supabase-helpers";
 import { Camera, User } from "lucide-react";
 
 interface EditProfileModalProps {
