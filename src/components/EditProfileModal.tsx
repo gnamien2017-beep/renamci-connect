@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { GRADES, GRADE_LABELS } from "@/lib/supabase-helpers";
+import { GRADES, GRADE_LABELS, CORPS_METIERS } from "@/lib/supabase-helpers";
 import { Camera, User } from "lucide-react";
 
 interface EditProfileModalProps {
@@ -189,9 +189,16 @@ const EditProfileModal = ({ profile, password, open, onClose, onSaved }: EditPro
             <Label className="text-xs">Adresse</Label>
             <Input value={form.adresse} onChange={(e) => updateField("adresse", e.target.value)} maxLength={300} />
           </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Spécialisation ENA</Label>
-            <Input value={form.specialisation_ena} onChange={(e) => updateField("specialisation_ena", e.target.value)} maxLength={200} />
+           <div className="space-y-1">
+            <Label className="text-xs">Corps de métier</Label>
+            <Select value={form.specialisation_ena} onValueChange={(v) => updateField("specialisation_ena", v)}>
+              <SelectTrigger><SelectValue placeholder="Sélectionnez" /></SelectTrigger>
+              <SelectContent>
+                {CORPS_METIERS.map((c) => (
+                  <SelectItem key={c.id} value={c.label}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Promotion ENA</Label>

@@ -1,0 +1,1 @@
+UPDATE profiles SET specialisation_ena = 'Trésor' WHERE specialisation_ena = 'Tésor';
