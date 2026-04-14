@@ -237,9 +237,16 @@ const RegisterPage = () => {
         <div className="glass-card rounded-xl p-6 space-y-4">
           <h2 className="font-serif text-lg font-semibold text-foreground">Formation ENA</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="specialisation_ena">Spécialisation ENA</Label>
-              <Input id="specialisation_ena" value={form.specialisation_ena} onChange={(e) => updateField("specialisation_ena", e.target.value)} maxLength={200} />
+             <div className="space-y-2">
+              <Label htmlFor="specialisation_ena">Corps de métier (Spécialisation ENA) *</Label>
+              <Select value={form.specialisation_ena} onValueChange={(v) => updateField("specialisation_ena", v)}>
+                <SelectTrigger><SelectValue placeholder="Sélectionnez votre corps" /></SelectTrigger>
+                <SelectContent>
+                  {CORPS_METIERS.map((c) => (
+                    <SelectItem key={c.id} value={c.label}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="promotion_ena">Promotion ENA</Label>
