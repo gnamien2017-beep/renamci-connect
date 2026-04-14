@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { CORPS_METIERS, CORPS_COLORS, GRADE_COLORS_HEX } from "@/lib/supabase-helpers";
+import { CORPS_METIERS, CORPS_COLORS } from "@/lib/supabase-helpers";
 import { Building2, Landmark } from "lucide-react";
 
 const ECOLE_CONFIG = {
@@ -40,46 +40,28 @@ const CorpsMetierSection = () => {
                 </span>
               </div>
 
-              <div className="space-y-6">
+              <div className="flex flex-wrap gap-3">
                 {corps.map((c) => {
                   const color = CORPS_COLORS[c.id] || { bg: "#2d6a4f", text: "#ffffff" };
 
                   return (
-                    <div key={c.id} className="glass-card rounded-2xl p-5 animate-fade-in">
-                      {/* Corps header */}
-                      <h4
-                        className="text-base font-sans font-bold tracking-wide mb-4 uppercase"
-                        style={{ color: color.bg }}
-                      >
-                        {c.label}
-                        {c.abbrev && (
-                          <span className="text-xs font-normal opacity-70 ml-2">
-                            ({c.abbrev})
-                          </span>
-                        )}
-                      </h4>
-
-                      {/* Grade buttons */}
-                      <div className="flex flex-wrap gap-2">
-                        {c.grades.map((grade) => {
-                          const gradeColor = GRADE_COLORS_HEX[grade];
-                          return (
-                            <button
-                              key={grade}
-                              onClick={() => navigate(`/corps/${c.id}/${grade}`)}
-                              className="corps-grade-btn"
-                              style={{
-                                background: `linear-gradient(145deg, ${gradeColor.light}, ${gradeColor.main})`,
-                                boxShadow: `0 4px 6px ${gradeColor.main}40, 0 2px 0 ${gradeColor.light}, inset 0 -2px 0 ${gradeColor.dark}`,
-                                color: "#fff",
-                              }}
-                            >
-                              {grade}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <button
+                      key={c.id}
+                      onClick={() => navigate(`/corps/${c.id}`)}
+                      className="corps-metier-btn"
+                      style={{
+                        background: `linear-gradient(145deg, ${color.bg}cc, ${color.bg})`,
+                        boxShadow: `0 6px 12px ${color.bg}40, 0 2px 0 ${color.bg}88, inset 0 -3px 0 ${color.bg}dd`,
+                        color: color.text,
+                      }}
+                    >
+                      {c.label.toUpperCase()}
+                      {c.abbrev && (
+                        <span className="block text-[10px] font-normal opacity-70 mt-0.5">
+                          ({c.abbrev})
+                        </span>
+                      )}
+                    </button>
                   );
                 })}
               </div>
