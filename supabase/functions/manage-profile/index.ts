@@ -1,11 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -40,9 +47,8 @@ serve(async (req) => {
       });
     }
 
-    // Verify password using bcrypt
-    const valid = await bcrypt.compare(password, profile.password_hash);
-    if (!valid) {
+    const inputHash = await hashPassword(password);
+    if (inputHash !== profile.password_hash) {
       return new Response(JSON.stringify({ error: "Mot de passe incorrect" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -80,7 +86,7 @@ serve(async (req) => {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
-        updates.password_hash = await bcrypt.hash(updates.new_password);
+        updates.password_hash = await hashPassword(updates.new_password);
         delete updates.new_password;
       }
 
@@ -113,6 +119,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
+    console.error("Manage profile error:", err);
     return new Response(JSON.stringify({ error: "Erreur serveur" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
