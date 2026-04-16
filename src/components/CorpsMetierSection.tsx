@@ -40,15 +40,32 @@ const CorpsMetierSection = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                {corps.map((c) => {
+              <div
+                className={`grid gap-3 mx-auto max-w-3xl ${
+                  ecole === "EGAD" ? "grid-cols-2 sm:grid-cols-6" : "grid-cols-2 sm:grid-cols-3"
+                }`}
+              >
+                {corps.map((c, idx) => {
                   const color = CORPS_COLORS[c.id] || { bg: "#2d6a4f", text: "#ffffff" };
+
+                  // EGAD: 3 en haut (cols 1-2, 3-4, 5-6), 2 en bas centrés (cols 2-3, 4-5)
+                  let positionClass = "";
+                  if (ecole === "EGAD") {
+                    const positions = [
+                      "sm:col-span-2 sm:col-start-1",
+                      "sm:col-span-2 sm:col-start-3",
+                      "sm:col-span-2 sm:col-start-5",
+                      "sm:col-span-2 sm:col-start-2",
+                      "sm:col-span-2 sm:col-start-4",
+                    ];
+                    positionClass = positions[idx] || "";
+                  }
 
                   return (
                     <button
                       key={c.id}
                       onClick={() => navigate(`/corps/${c.id}`)}
-                      className="corps-metier-btn h-20 flex items-center justify-center"
+                      className={`corps-metier-btn h-20 flex items-center justify-center ${positionClass}`}
                       style={{
                         background: `linear-gradient(145deg, ${color.bg}cc, ${color.bg})`,
                         boxShadow: `0 6px 12px ${color.bg}40, 0 2px 0 ${color.bg}88, inset 0 -3px 0 ${color.bg}dd`,
