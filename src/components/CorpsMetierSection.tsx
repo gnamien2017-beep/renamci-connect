@@ -40,7 +40,13 @@ const CorpsMetierSection = () => {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              <div
+                className={`grid gap-3 mx-auto ${
+                  ecole === "EGAD"
+                    ? "grid-cols-2 sm:grid-cols-3 max-w-2xl [&>*:nth-child(4)]:sm:col-start-1 [&>*:nth-child(4)]:sm:col-end-3 [&>*:nth-child(4)]:sm:justify-self-end [&>*:nth-child(5)]:sm:col-start-3 [&>*:nth-child(5)]:sm:justify-self-start"
+                    : "grid-cols-2 sm:grid-cols-3 max-w-2xl"
+                }`}
+              >
                 {corps.map((c) => {
                   const color = CORPS_COLORS[c.id] || { bg: "#2d6a4f", text: "#ffffff" };
 
