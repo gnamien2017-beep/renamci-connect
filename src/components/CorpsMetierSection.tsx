@@ -40,7 +40,7 @@ const CorpsMetierSection = () => {
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {corps.map((c) => {
                   const color = CORPS_COLORS[c.id] || { bg: "#2d6a4f", text: "#ffffff" };
 
@@ -48,7 +48,7 @@ const CorpsMetierSection = () => {
                     <button
                       key={c.id}
                       onClick={() => navigate(`/corps/${c.id}`)}
-                      className="corps-metier-btn"
+                      className="corps-metier-btn h-20 flex items-center justify-center"
                       style={{
                         background: `linear-gradient(145deg, ${color.bg}cc, ${color.bg})`,
                         boxShadow: `0 6px 12px ${color.bg}40, 0 2px 0 ${color.bg}88, inset 0 -3px 0 ${color.bg}dd`,

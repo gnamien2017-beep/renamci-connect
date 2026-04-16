@@ -88,9 +88,9 @@ const ValeursBadges = ({ valeurs }: { valeurs: string }) => {
   return (
     <div className="space-y-2">
       <h3 className="font-serif text-base font-bold text-destructive uppercase tracking-wide">Valeurs :</h3>
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-col gap-1.5">
         {items.map((v, i) => (
-          <Badge key={i} variant="secondary" className="text-xs font-sans">
+          <Badge key={i} variant="secondary" className="text-xs font-sans w-fit">
             {v}
           </Badge>
         ))}
