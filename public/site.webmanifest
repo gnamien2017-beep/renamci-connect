@@ -1,6 +1,6 @@
 {
-  "name": "RENAMCI",
-  "short_name": "RENAMCI",
+  "name": "RENAM-CI",
+  "short_name": "RENAM",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
