@@ -33,10 +33,12 @@ interface ProfileModalProps {
 const InfoRow = ({ icon: Icon, label, value, isPhone }: { icon: any; label: string; value: string | null; isPhone?: boolean }) => {
   if (!value) return null;
 
-  const formatPhone = (phone: string) => phone.replace(/\s+/g, "").replace(/^0/, "+225");
-
   if (isPhone) {
-    const cleanPhone = formatPhone(value);
+    const e164 = toE164(value);
+    const wa = toWhatsappNumber(value);
+    const openWhatsapp = () => {
+      window.open(`https://wa.me/${wa}`, "_blank", "noopener,noreferrer");
+    };
     return (
       <div className="flex items-start gap-2 py-1.5">
         <Icon className="w-4 h-4 text-primary mt-0.5 shrink-0" />
@@ -50,21 +52,20 @@ const InfoRow = ({ icon: Icon, label, value, isPhone }: { icon: any; label: stri
             </PopoverTrigger>
             <PopoverContent className="w-48 p-2 space-y-1">
               <a
-                href={`tel:${cleanPhone}`}
+                href={`tel:${e164}`}
                 className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent text-sm font-sans transition-colors"
               >
                 <Phone className="w-4 h-4 text-primary" />
                 Appeler
               </a>
-              <a
-                href={`https://wa.me/${cleanPhone.replace("+", "")}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent text-sm font-sans transition-colors"
+              <button
+                type="button"
+                onClick={openWhatsapp}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent text-sm font-sans transition-colors text-left"
               >
                 <MessageCircle className="w-4 h-4 text-green-500" />
                 WhatsApp
-              </a>
+              </button>
             </PopoverContent>
           </Popover>
         </div>
