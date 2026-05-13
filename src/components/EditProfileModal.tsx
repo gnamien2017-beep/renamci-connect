@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { GRADES, GRADE_LABELS, CORPS_METIERS } from "@/lib/supabase-helpers";
 import { Camera, User } from "lucide-react";
+import PhoneField from "@/components/PhoneField";
 
 interface EditProfileModalProps {
   profile: Profile;
@@ -179,7 +180,7 @@ const EditProfileModal = ({ profile, password, open, onClose, onSaved }: EditPro
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Téléphone</Label>
-            <Input value={form.contact} onChange={(e) => updateField("contact", e.target.value)} maxLength={20} />
+            <PhoneField value={form.contact} onChange={(v) => updateField("contact", v)} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Email</Label>
