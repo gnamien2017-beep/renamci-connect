@@ -249,7 +249,7 @@ const RegisterPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contact">Téléphone</Label>
-              <Input id="contact" value={form.contact} onChange={(e) => updateField("contact", e.target.value)} maxLength={20} />
+              <PhoneField value={form.contact} onChange={(v) => updateField("contact", v)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
