@@ -1,151 +1,89 @@
+## Objectif
 
-
-# Audit professionnel complet de la plateforme RENAMCI
-
----
-
-## 1. Analyse UI/UX Designer
-
-### Forces actuelles
-- Identite visuelle coherente (vert/or/blanc, Playfair Display)
-- Cartes de profil avec photo circulaire et bandeau institutionnel
-- Animations subtiles (fade-in, scale-in, hover effects)
-
-### Problemes identifies
-
-**Navigation et architecture d'information**
-- Pas de barre de navigation persistante : l'utilisateur perd ses reperes entre les pages
-- Pas de fil d'Ariane sur les pages internes
-- Le bouton "Retour" est le seul moyen de naviguer, ce qui est fragile
-- Pas de recherche globale depuis la page d'accueil (il faut d'abord choisir un grade)
-
-**Accessibilite**
-- Pas de mode sombre fonctionnel (les tokens dark existent mais ne sont pas actives)
-- Contraste insuffisant sur certains textes (`text-primary-foreground/70`)
-- Les photos de profil manquent d'attributs `alt` descriptifs
-- Aucun indicateur de focus visible sur les cartes
-
-**Formulaire d'inscription**
-- Formulaire tres long sans indicateur de progression
-- Pas de sauvegarde temporaire : si l'utilisateur recharge, tout est perdu
-- Validation uniquement a la soumission, pas en temps reel
-- Pas de recadrage/compression de photo cote client
-
-**Carte de profil et modale**
-- La modale de profil n'est pas responsive pour petits ecrans
-- Le popover telephone peut etre coupe sur mobile
-- Les boutons Modifier/Supprimer sont visibles par tous, meme ceux qui ne connaissent pas le mot de passe (confusion UX)
-
-### Recommandations
-- Ajouter un **header/navbar persistant** avec logo, recherche globale et lien d'inscription
-- Implementer un **stepper visuel** dans le formulaire d'inscription (etapes 1-4)
-- Ajouter la **validation en temps reel** des champs
-- Integrer la **compression d'image cote client** avant upload
-- Creer une **page "A propos"** pour donner du contexte au reseau
+Corriger 4 points : (1) sélecteur pays avec drapeaux pour le téléphone, (2) appels téléphoniques corrects, (3) WhatsApp opérationnel, (4) lecture hors-ligne des profils/statistiques + inscription hors-ligne avec synchronisation automatique au retour de la connexion.
 
 ---
 
-## 2. Analyse Developpeur Full-Stack
+## 1. Sélecteur de pays avec drapeaux (téléphone)
 
-### Forces actuelles
-- Stack solide (React, TanStack Query, Edge Functions)
-- Separation backend/frontend propre via Edge Functions
-- Hachage de mot de passe cote serveur (SHA-256 + sel)
-- Vue `profiles_public` pour cacher le `password_hash`
+**Pages concernées :** `RegisterPage.tsx`, `EditProfileModal.tsx`.
 
-### Problemes critiques
+- Installer `react-phone-number-input` (gère drapeaux SVG, formatage E.164, recherche pays, validation).
+- Remplacer le champ `Input` téléphone actuel par un composant `PhoneInput` avec :
+  - Pays par défaut : Côte d'Ivoire (`CI`).
+  - Stockage en format **E.164** (ex. `+2250708773321`) dans la colonne `contact`.
+  - Style adapté à notre design system (mêmes bordures, hauteur, focus).
 
-**Securite**
-- SHA-256 est cryptographiquement faible pour le hachage de mots de passe. Il faut utiliser **bcrypt** ou **Argon2** (disponible via Deno)
-- Les politiques RLS sont toutes en `RESTRICTIVE` (`Permissive: No`), ce qui signifie qu'elles utilisent un AND logique. Cela rend certaines combinaisons impossibles (insert public + insert admin bloquent mutuellement)
-- Aucune limitation de debit (rate limiting) sur les Edge Functions : risque de brute-force sur les mots de passe
-- Le mot de passe minimum est de 4 caracteres, ce qui est trop faible
-
-**Performance**
-- `window.location.reload()` apres modification de profil au lieu d'invalider le cache React Query
-- `fetchStats()` charge TOUS les profils en memoire juste pour compter : il faudrait une requete SQL d'aggregation ou une vue materialisee
-- Les images ne sont pas compressees/redimensionnees avant upload (potentiellement 5 Mo par photo)
-- Pas de pagination sur la page de grade : probleme si +100 membres
-
-**Qualite de code**
-- `supabase.from("profiles_public" as any)` : le cast `as any` contourne le typage et masque les erreurs
-- Pas de gestion d'erreur centralisee
-- Le type `Profile` est defini manuellement au lieu d'etre derive des types generes
-- Pas de tests unitaires fonctionnels
-
-### Recommandations
-- Migrer vers **bcrypt** dans les Edge Functions
-- Passer les RLS en mode `PERMISSIVE` pour corriger la logique d'acces
-- Ajouter `queryClient.invalidateQueries()` au lieu de `window.location.reload()`
-- Creer une **fonction SQL d'aggregation** pour les statistiques
-- Implementer la **pagination** (infinite scroll ou pages)
-- Ajouter un **rate limiter** dans les Edge Functions (3 tentatives/minute)
+**Bénéfice :** le numéro est stocké au format international complet, ce qui résout aussi les points 2 et 3.
 
 ---
 
-## 3. Analyse Chef de Projet / Gestionnaire
+## 2. Correction de l'appel téléphonique
 
-### Etat du produit
-L'application est un **MVP fonctionnel** : inscription, consultation, modification, suppression. Mais elle manque de fonctionnalites structurantes pour un usage reel par une organisation.
+**Fichier :** `ProfileModal.tsx` → `InfoRow` (helper `formatPhone`).
 
-### Fonctionnalites manquantes prioritaires
+Problème : la regex actuelle `replace(/^0/, "+225")` retire le `0` initial, ce qui peut donner un numéro tronqué pour les anciens enregistrements ou les pays autres que CI.
 
-**P0 - Indispensable**
-- **Recherche globale** : chercher un membre sans connaitre son grade
-- **Navbar persistante** : navigation structuree sur toutes les pages
-- **Correction RLS** : les politiques restrictives bloquent potentiellement les inserts
-- **Renforcement securite mots de passe** : bcrypt + minimum 6 caracteres
-
-**P1 - Important**
-- **Export PDF/Excel** de l'annuaire ou d'un profil individuel
-- **Tri et filtres avances** (par ministere, promotion ENA, sexe)
-- **Page profil individuelle** avec URL partageable (`/membre/:id`)
-- **Mode hors-ligne / PWA** pour consultation sans connexion
-
-**P2 - Ameliorations**
-- **Panel administrateur** : dashboard pour gerer les membres, moderer, voir les statistiques detaillees
-- **Notifications** : alerter les membres quand un nouveau collegue rejoint
-- **Annuaire par promotion ENA** : vue alternative regroupant par promotion
-- **QR Code** sur chaque profil pour partager facilement
-- **Mode sombre** : activer le toggle dark mode
-
-**P3 - Vision long terme**
-- **Application mobile** (PWA progressive)
-- **Messagerie interne** entre membres
-- **Evenements/Agenda** du reseau
-- **Blog/Actualites** pour la communaute
-- **Carte geographique** des membres (Cote d'Ivoire)
-
-### Risques identifies
-- **Donnees orphelines** : pas de mecanisme de nettoyage si un membre part
-- **Scalabilite** : `fetchStats` charge tout en memoire
-- **Securite faible** : SHA-256 + mot de passe 4 chars = vulnerable
-- **Pas de backup** : aucune strategie de sauvegarde visible
+**Solution :**
+- Si le numéro commence déjà par `+` → utiliser tel quel.
+- Sinon, si commence par `00` → remplacer par `+`.
+- Sinon, si 10 chiffres commençant par `0` (format local CI) → préfixer `+225` **sans retirer le 0** (CI n'a pas de trunk prefix à supprimer).
+- Affichage formaté lisible, lien `tel:` au format E.164.
 
 ---
 
-## Plan d'implementation recommande
+## 3. WhatsApp opérationnel
 
-### Phase 1 — Solidifier (1-2 semaines)
-1. Corriger les politiques RLS (passer en PERMISSIVE)
-2. Migrer SHA-256 vers bcrypt dans les Edge Functions
-3. Remplacer `window.location.reload()` par invalidation React Query
-4. Ajouter une navbar persistante avec recherche globale
-5. Ajouter la pagination sur les pages de grade
+Même `InfoRow` :
+- URL : `https://wa.me/<E164 sans +>` (ex. `https://wa.me/2250708773321`).
+- Ouverture via `window.open(url, "_blank", "noopener")` au lieu d'un simple `<a>` (certains `Popover` interceptent le clic sur mobile).
+- Tester aussi le schéma `whatsapp://send?phone=...` en fallback mobile.
 
-### Phase 2 — Enrichir (2-3 semaines)
-6. Stepper dans le formulaire d'inscription
-7. Filtres avances (ministere, promotion, sexe)
-8. Export PDF d'un profil
-9. Page profil partageable avec URL unique
-10. Compression d'image cote client
+---
 
-### Phase 3 — Professionnaliser (3-4 semaines)
-11. Panel administrateur
-12. QR Code par profil
-13. Mode PWA (hors-ligne)
-14. Statistiques avec aggregation SQL
-15. Mode sombre
+## 4. Mode hors-ligne complet
 
-Voulez-vous que je commence par la Phase 1 (corrections critiques + navbar + recherche globale) ?
+### 4.a Lecture hors-ligne (profils + statistiques)
 
+- Mettre en cache les réponses `profiles_public` dans **IndexedDB** (via `idb-keyval`, léger).
+- Modifier `fetchProfiles`, `fetchProfilesByCorps`, `fetchStats` pour :
+  1. Tenter le réseau ; si succès → mettre à jour le cache puis retourner.
+  2. Si réseau indisponible → lire depuis le cache.
+- Ajouter une bannière discrète "Mode hors-ligne — données du …" quand on lit depuis le cache.
+- Étendre le Service Worker pour précacher les routes principales (`/`, `/grade/*`, `/corps/*`, `/register`).
+
+### 4.b Inscription hors-ligne (file d'attente + synchro)
+
+- Dans `RegisterPage`, détecter `navigator.onLine`.
+- Si **hors-ligne** au submit :
+  - Photo : convertir en `Blob` base64 et stocker dans IndexedDB.
+  - Pousser la soumission dans une file `pending-registrations` (IndexedDB).
+  - Toast : « Profil enregistré localement, il sera publié dès le retour de la connexion. »
+  - Naviguer vers une page de confirmation locale.
+- **Synchroniseur** (`src/lib/offline-sync.ts`) :
+  - Au démarrage de l'app + sur l'événement `online` → vider la file en appelant `register-profile` (avec upload photo si présente).
+  - Toast de succès à chaque profil synchronisé, retry exponentiel sur échec réseau.
+- Optionnel : enregistrer un Background Sync (`registration.sync.register("sync-profiles")`) avec fallback JS pour les navigateurs sans support.
+
+---
+
+## Détails techniques
+
+- **Dépendances ajoutées :** `react-phone-number-input`, `idb-keyval`.
+- **Nouveaux fichiers :**
+  - `src/lib/offline-cache.ts` — wrapper IndexedDB pour profils/stats.
+  - `src/lib/offline-sync.ts` — file d'attente d'inscriptions + synchroniseur.
+  - `src/components/OfflineBanner.tsx` — bannière statut hors-ligne.
+- **Fichiers modifiés :**
+  - `src/pages/RegisterPage.tsx`, `src/components/EditProfileModal.tsx` — PhoneInput + soumission offline.
+  - `src/components/ProfileModal.tsx` — `formatPhone` robuste + WhatsApp via `window.open`.
+  - `src/lib/supabase-helpers.ts` — `fetch*` avec fallback cache.
+  - `public/sw.js` — précache des routes app + stratégie StaleWhileRevalidate pour `profiles_public`.
+  - `src/App.tsx` (ou `main.tsx`) — initialiser le synchroniseur, monter `OfflineBanner`.
+
+---
+
+## Ce qui n'est PAS inclus
+
+- Pas de modification du backend / RLS (la file de synchro réutilise `register-profile`).
+- Pas d'édition/suppression hors-ligne (nécessite vérification mot de passe en ligne) — uniquement lecture + nouvelle inscription.
