@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Profile } from "@/lib/supabase-helpers";
+import { toE164, toWhatsappNumber } from "@/lib/phone-utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { User, Phone, Mail, MapPin, Briefcase, GraduationCap, Building2, Pencil, Trash2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
