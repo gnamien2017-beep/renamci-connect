@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { GRADES, GRADE_LABELS, CORPS_METIERS, type Grade } from "@/lib/supabase-helpers";
 import { supabase } from "@/integrations/supabase/client";
+import PhoneField from "@/components/PhoneField";
+import { enqueueRegistration, fileToDataUrl } from "@/lib/offline-sync";
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -80,7 +82,23 @@ const RegisterPage = () => {
         cleaned[k] = typeof v === "string" && v.trim() === "" && k !== "nom" && k !== "prenoms" && k !== "password" ? null : v;
       }
 
-      // Upload photo if provided
+      // ===== Offline path: queue submission for later sync =====
+      if (!navigator.onLine) {
+        const photoDataUrl = photoFile ? await fileToDataUrl(photoFile) : undefined;
+        await enqueueRegistration({
+          payload: cleaned,
+          photoDataUrl,
+          photoName: photoFile?.name,
+        });
+        toast({
+          title: "Enregistré hors-ligne",
+          description: "Votre profil sera publié automatiquement dès le retour de la connexion.",
+        });
+        navigate(`/grade/${form.grade}`);
+        return;
+      }
+
+      // ===== Online path =====
       let photo_url: string | null = null;
       if (photoFile) {
         const ext = photoFile.name.split(".").pop();
@@ -98,6 +116,17 @@ const RegisterPage = () => {
       });
 
       if (error || data?.error) {
+        // Network error fallback → queue
+        if (!navigator.onLine || (error && /network|fetch|failed/i.test(error.message || ""))) {
+          const photoDataUrl = photoFile ? await fileToDataUrl(photoFile) : undefined;
+          await enqueueRegistration({ payload: cleaned, photoDataUrl, photoName: photoFile?.name });
+          toast({
+            title: "Enregistré hors-ligne",
+            description: "Connexion instable — votre profil sera publié dès que possible.",
+          });
+          navigate(`/grade/${form.grade}`);
+          return;
+        }
         throw new Error(data?.error || error?.message || "Erreur lors de l'inscription");
       }
 
@@ -220,7 +249,7 @@ const RegisterPage = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="contact">Téléphone</Label>
-              <Input id="contact" value={form.contact} onChange={(e) => updateField("contact", e.target.value)} maxLength={20} />
+              <PhoneField value={form.contact} onChange={(v) => updateField("contact", v)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

@@ -99,43 +99,73 @@ export function getCorpsById(id: string): CorpsMetier | undefined {
   return CORPS_METIERS.find((c) => c.id === id);
 }
 
+import {
+  cacheProfiles,
+  cacheStats,
+  getCachedProfiles,
+  getCachedStats,
+  profilesCacheKey,
+  corpsCacheKey,
+} from "./offline-cache";
+
 export async function fetchProfiles(grade?: Grade) {
-  let query = supabase.from("profiles_public" as any).select("*");
-  if (grade) {
-    query = query.eq("grade", grade);
+  const key = profilesCacheKey(grade);
+  try {
+    let query = supabase.from("profiles_public" as any).select("*");
+    if (grade) query = query.eq("grade", grade);
+    const { data, error } = await query.order("nom");
+    if (error) throw error;
+    const profiles = (data as unknown) as Profile[];
+    cacheProfiles(key, profiles).catch(() => {});
+    return profiles;
+  } catch (err) {
+    const cached = await getCachedProfiles(key);
+    if (cached) return cached.profiles;
+    throw err;
   }
-  const { data, error } = await query.order("nom");
-  if (error) throw error;
-  return (data as unknown) as Profile[];
 }
 
 export async function fetchProfilesByCorps(corpsId: string, grade?: Grade) {
   const corps = getCorpsById(corpsId);
   if (!corps) return [];
-  
-  let query = supabase.from("profiles_public" as any).select("*");
-  query = query.eq("specialisation_ena", corps.label);
-  if (grade) {
-    query = query.eq("grade", grade);
+  const key = corpsCacheKey(corpsId, grade);
+  try {
+    let query = supabase.from("profiles_public" as any).select("*");
+    query = query.eq("specialisation_ena", corps.label);
+    if (grade) query = query.eq("grade", grade);
+    const { data, error } = await query.order("nom");
+    if (error) throw error;
+    const profiles = (data as unknown) as Profile[];
+    cacheProfiles(key, profiles).catch(() => {});
+    return profiles;
+  } catch (err) {
+    const cached = await getCachedProfiles(key);
+    if (cached) return cached.profiles;
+    throw err;
   }
-  const { data, error } = await query.order("nom");
-  if (error) throw error;
-  return (data as unknown) as Profile[];
 }
 
 export async function fetchStats() {
-  const { data, error } = await supabase.from("profiles_public" as any).select("sexe, grade");
-  if (error) throw error;
+  try {
+    const { data, error } = await supabase.from("profiles_public" as any).select("sexe, grade");
+    if (error) throw error;
 
-  const rows = (data as unknown) as { sexe: string; grade: string }[];
-  const total = rows.length;
-  const hommes = rows.filter((p) => p.sexe === "Homme").length;
-  const femmes = rows.filter((p) => p.sexe === "Femme").length;
+    const rows = (data as unknown) as { sexe: string; grade: string }[];
+    const total = rows.length;
+    const hommes = rows.filter((p) => p.sexe === "Homme").length;
+    const femmes = rows.filter((p) => p.sexe === "Femme").length;
 
-  const gradeCount: Record<string, number> = {};
-  GRADES.forEach((g) => {
-    gradeCount[g] = rows.filter((p) => p.grade === g).length;
-  });
+    const gradeCount: Record<string, number> = {};
+    GRADES.forEach((g) => {
+      gradeCount[g] = rows.filter((p) => p.grade === g).length;
+    });
 
-  return { total, hommes, femmes, gradeCount };
+    const result = { total, hommes, femmes, gradeCount };
+    cacheStats(result).catch(() => {});
+    return result;
+  } catch (err) {
+    const cached = await getCachedStats<{ total: number; hommes: number; femmes: number; gradeCount: Record<string, number> }>();
+    if (cached) return cached.stats;
+    throw err;
+  }
 }
