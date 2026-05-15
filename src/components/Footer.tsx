@@ -33,7 +33,7 @@ const Footer = () => {
         <div className="flex flex-col items-center md:items-start gap-2">
           <h4 className="font-serif text-sm font-bold text-primary-foreground mb-1">Contact</h4>
           <div className="text-primary-foreground/70 text-xs font-sans text-center md:text-left">
-            <p className="font-semibold text-primary-foreground">SUOMBOUNOU</p>
+            <p className="font-semibold text-primary-foreground">SOUMBOUNOU</p>
             <p>Président RENAMCI</p>
             <a href="tel:+2250758503877" className="hover:text-primary-foreground transition-colors">Tél : 0758503877</a>
           </div>
