@@ -19,6 +19,14 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [session, setSessionState] = useState<MemberSession | null>(() => getSession());
+
+  useEffect(() => useSessionListener(() => setSessionState(getSession())), []);
+
+  const handleLogout = () => {
+    clearSession();
+    navigate("/");
+  };
 
   const { data: allProfiles } = useQuery({
     queryKey: ["all-profiles"],
