@@ -1,5 +1,5 @@
 import type { Profile } from "@/lib/supabase-helpers";
-import { GRADE_COLORS } from "@/lib/supabase-helpers";
+import { GRADE_COLORS, ROLE_ASSOC_LABELS } from "@/lib/supabase-helpers";
 import { User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
