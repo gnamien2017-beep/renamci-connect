@@ -172,6 +172,7 @@ export type Database = {
           prenoms: string | null
           profession: string | null
           promotion_ena: string | null
+          role_assoc: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe: Database["public"]["Enums"]["sex_type"] | null
           specialisation_ena: string | null
           updated_at: string | null
@@ -195,6 +196,7 @@ export type Database = {
           prenoms?: string | null
           profession?: string | null
           promotion_ena?: string | null
+          role_assoc?: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe?: Database["public"]["Enums"]["sex_type"] | null
           specialisation_ena?: string | null
           updated_at?: string | null
@@ -218,6 +220,7 @@ export type Database = {
           prenoms?: string | null
           profession?: string | null
           promotion_ena?: string | null
+          role_assoc?: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe?: Database["public"]["Enums"]["sex_type"] | null
           specialisation_ena?: string | null
           updated_at?: string | null
