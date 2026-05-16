@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      password_reset_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          profile_id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          profile_id: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          profile_id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "password_reset_tokens_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "password_reset_tokens_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           adresse: string | null
@@ -33,6 +75,7 @@ export type Database = {
           prenoms: string
           profession: string | null
           promotion_ena: string | null
+          role_assoc: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe: Database["public"]["Enums"]["sex_type"]
           specialisation_ena: string | null
           updated_at: string
@@ -57,6 +100,7 @@ export type Database = {
           prenoms: string
           profession?: string | null
           promotion_ena?: string | null
+          role_assoc?: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe?: Database["public"]["Enums"]["sex_type"]
           specialisation_ena?: string | null
           updated_at?: string
@@ -81,6 +125,7 @@ export type Database = {
           prenoms?: string
           profession?: string | null
           promotion_ena?: string | null
+          role_assoc?: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe?: Database["public"]["Enums"]["sex_type"]
           specialisation_ena?: string | null
           updated_at?: string
@@ -127,6 +172,7 @@ export type Database = {
           prenoms: string | null
           profession: string | null
           promotion_ena: string | null
+          role_assoc: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe: Database["public"]["Enums"]["sex_type"] | null
           specialisation_ena: string | null
           updated_at: string | null
@@ -150,6 +196,7 @@ export type Database = {
           prenoms?: string | null
           profession?: string | null
           promotion_ena?: string | null
+          role_assoc?: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe?: Database["public"]["Enums"]["sex_type"] | null
           specialisation_ena?: string | null
           updated_at?: string | null
@@ -173,6 +220,7 @@ export type Database = {
           prenoms?: string | null
           profession?: string | null
           promotion_ena?: string | null
+          role_assoc?: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe?: Database["public"]["Enums"]["sex_type"] | null
           specialisation_ena?: string | null
           updated_at?: string | null
@@ -193,6 +241,14 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      app_role_assoc:
+        | "president"
+        | "vice_president"
+        | "secretaire_general"
+        | "tresorier_principal"
+        | "secretaire_national"
+        | "membre_fondateur"
+        | "membre_actif"
       grade_type: "A7" | "A6" | "A5" | "A4" | "A3" | "B3"
       sex_type: "Homme" | "Femme"
     }
@@ -323,6 +379,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      app_role_assoc: [
+        "president",
+        "vice_president",
+        "secretaire_general",
+        "tresorier_principal",
+        "secretaire_national",
+        "membre_fondateur",
+        "membre_actif",
+      ],
       grade_type: ["A7", "A6", "A5", "A4", "A3", "B3"],
       sex_type: ["Homme", "Femme"],
     },

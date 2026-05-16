@@ -10,6 +10,9 @@ import Index from "./pages/Index";
 import GradePage from "./pages/GradePage";
 import CorpsMetierPage from "./pages/CorpsMetierPage";
 import RegisterPage from "./pages/RegisterPage";
+import LoginPage from "./pages/LoginPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import NotFound from "./pages/NotFound";
 import { initOfflineSync } from "@/lib/offline-sync";
 import { toast } from "@/hooks/use-toast";
@@ -42,6 +45,9 @@ const App = () => {
             <Route path="/corps/:corpsId" element={<CorpsMetierPage />} />
             <Route path="/corps/:corpsId/:grade" element={<CorpsMetierPage />} />
             <Route path="/inscription" element={<RegisterPage />} />
+            <Route path="/connexion" element={<LoginPage />} />
+            <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+            <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

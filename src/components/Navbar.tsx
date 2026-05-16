@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Search, UserPlus, Home, X } from "lucide-react";
+import { Search, UserPlus, Home, X, LogIn, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchProfiles, type Profile } from "@/lib/supabase-helpers";
+import { getSession, clearSession, useSessionListener, type MemberSession } from "@/lib/auth-session";
 import logoRenamci from "@/assets/logo-renamci.png";
 import {
   Dialog,
@@ -18,6 +19,14 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+  const [session, setSessionState] = useState<MemberSession | null>(() => getSession());
+
+  useEffect(() => useSessionListener(() => setSessionState(getSession())), []);
+
+  const handleLogout = () => {
+    clearSession();
+    navigate("/");
+  };
 
   const { data: allProfiles } = useQuery({
     queryKey: ["all-profiles"],
@@ -75,6 +84,33 @@ const Navbar = () => {
                 onClick={() => navigate("/")}
               >
                 <Home className="w-5 h-5" />
+              </Button>
+            )}
+
+            {session ? (
+              <>
+                <span className="hidden md:inline text-primary-foreground/90 text-xs font-sans">
+                  {session.prenoms}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-primary-foreground hover:bg-primary-foreground/10"
+                  onClick={handleLogout}
+                  title="Se déconnecter"
+                >
+                  <LogOut className="w-5 h-5" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => navigate("/connexion")}
+                title="Se connecter"
+              >
+                <LogIn className="w-5 h-5" />
               </Button>
             )}
 

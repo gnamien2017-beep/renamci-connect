@@ -1,5 +1,5 @@
 import type { Profile } from "@/lib/supabase-helpers";
-import { GRADE_COLORS } from "@/lib/supabase-helpers";
+import { GRADE_COLORS, ROLE_ASSOC_LABELS } from "@/lib/supabase-helpers";
 import { User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -46,6 +46,11 @@ const ProfileCard = ({ profile, onClick }: ProfileCardProps) => {
           <span className="uppercase">{profile.nom}</span>{" "}
           <span className="capitalize">{profile.prenoms}</span>
         </h3>
+        {profile.role_assoc && (
+          <p className="text-[11px] text-accent mt-0.5 font-bold uppercase tracking-wide truncate">
+            {ROLE_ASSOC_LABELS[profile.role_assoc]}
+          </p>
+        )}
         {profile.fonction && (
           <p className="text-xs text-accent mt-0.5 font-medium truncate">{profile.fonction}</p>
         )}

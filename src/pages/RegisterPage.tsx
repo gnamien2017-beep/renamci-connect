@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { GRADES, GRADE_LABELS, CORPS_METIERS, type Grade } from "@/lib/supabase-helpers";
+import { GRADES, GRADE_LABELS, CORPS_METIERS, ROLES_ASSOC, type Grade } from "@/lib/supabase-helpers";
 import { supabase } from "@/integrations/supabase/client";
 import PhoneField from "@/components/PhoneField";
 import { enqueueRegistration, fileToDataUrl } from "@/lib/offline-sync";
@@ -25,6 +25,7 @@ const RegisterPage = () => {
     nom: "",
     prenoms: "",
     sexe: "Homme" as "Homme" | "Femme",
+    role_assoc: "",
     grade: "" as string,
     fonction: "",
     profession: "",
@@ -220,6 +221,22 @@ const RegisterPage = () => {
           </div>
         </div>
 
+        {/* Rôle dans l'association */}
+        <div className="glass-card rounded-xl p-6 space-y-4">
+          <h2 className="font-serif text-lg font-semibold text-foreground">Rôle dans l'association</h2>
+          <div className="space-y-2">
+            <Label>Rôle</Label>
+            <Select value={form.role_assoc} onValueChange={(v) => updateField("role_assoc", v)}>
+              <SelectTrigger><SelectValue placeholder="Sélectionnez un rôle" /></SelectTrigger>
+              <SelectContent>
+                {ROLES_ASSOC.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* Professional info */}
         <div className="glass-card rounded-xl p-6 space-y-4">
           <h2 className="font-serif text-lg font-semibold text-foreground">Informations professionnelles</h2>
@@ -229,7 +246,7 @@ const RegisterPage = () => {
               <Input id="fonction" value={form.fonction} onChange={(e) => updateField("fonction", e.target.value)} maxLength={200} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="profession">Profession</Label>
+              <Label htmlFor="profession">Emploi</Label>
               <Input id="profession" value={form.profession} onChange={(e) => updateField("profession", e.target.value)} maxLength={200} />
             </div>
             <div className="space-y-2">
@@ -254,10 +271,6 @@ const RegisterPage = () => {
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" value={form.email} onChange={(e) => updateField("email", e.target.value)} maxLength={255} />
-            </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="adresse">Adresse</Label>
-              <Input id="adresse" value={form.adresse} onChange={(e) => updateField("adresse", e.target.value)} maxLength={300} />
             </div>
           </div>
         </div>

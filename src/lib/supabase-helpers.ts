@@ -1,5 +1,29 @@
 import { supabase } from "@/integrations/supabase/client";
 
+export type RoleAssoc =
+  | "president"
+  | "vice_president"
+  | "secretaire_general"
+  | "tresorier_principal"
+  | "secretaire_national"
+  | "membre_fondateur"
+  | "membre_actif";
+
+export const ROLES_ASSOC: { value: RoleAssoc; label: string }[] = [
+  { value: "president", label: "Président" },
+  { value: "vice_president", label: "Vice-Président" },
+  { value: "secretaire_general", label: "Secrétaire Général" },
+  { value: "tresorier_principal", label: "Trésorier Principal" },
+  { value: "secretaire_national", label: "Secrétaire National" },
+  { value: "membre_fondateur", label: "Membre Fondateur" },
+  { value: "membre_actif", label: "Membre Actif" },
+];
+
+export const ROLE_ASSOC_LABELS: Record<RoleAssoc, string> = ROLES_ASSOC.reduce(
+  (acc, r) => ({ ...acc, [r.value]: r.label }),
+  {} as Record<RoleAssoc, string>
+);
+
 export type Profile = {
   id: string;
   user_id: string | null;
@@ -7,6 +31,7 @@ export type Profile = {
   prenoms: string;
   sexe: "Homme" | "Femme";
   grade: "A7" | "A6" | "A5" | "A4" | "A3" | "B3";
+  role_assoc: RoleAssoc | null;
   fonction: string | null;
   profession: string | null;
   direction: string | null;
