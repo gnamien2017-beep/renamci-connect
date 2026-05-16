@@ -45,6 +45,9 @@ const App = () => {
             <Route path="/corps/:corpsId" element={<CorpsMetierPage />} />
             <Route path="/corps/:corpsId/:grade" element={<CorpsMetierPage />} />
             <Route path="/inscription" element={<RegisterPage />} />
+            <Route path="/connexion" element={<LoginPage />} />
+            <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
+            <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
