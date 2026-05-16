@@ -180,6 +180,11 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
                   <span className="capitalize">{profile.prenoms}</span>
                 </h2>
                 <p className="text-sm text-accent font-semibold mt-1">{profile.grade}</p>
+                {profile.role_assoc && (
+                  <p className="text-xs text-primary font-bold uppercase tracking-wide mt-0.5">
+                    {ROLE_ASSOC_LABELS[profile.role_assoc]}
+                  </p>
+                )}
                 {profile.ministere && (
                   <div className="gradient-header rounded-md px-3 py-2 mt-2">
                     <p className="text-primary-foreground text-xs font-sans font-medium leading-tight">{profile.ministere}</p>
@@ -193,12 +198,14 @@ const ProfileModal = ({ profile, open, onClose, onProfileChanged }: ProfileModal
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 px-6 pb-6">
             {profile.valeurs && <ValeursBadges valeurs={profile.valeurs} />}
             <div className="space-y-0.5">
+              {profile.role_assoc && (
+                <InfoRow icon={Award} label="Rôle" value={ROLE_ASSOC_LABELS[profile.role_assoc]} />
+              )}
               <InfoRow icon={Building2} label="Direction" value={profile.direction} />
               <InfoRow icon={Briefcase} label="Fonction" value={profile.fonction} />
-              <InfoRow icon={Briefcase} label="Profession" value={profile.profession} />
+              <InfoRow icon={Briefcase} label="Emploi" value={profile.profession} />
               <InfoRow icon={Phone} label="Contact" value={profile.contact} isPhone />
               <InfoRow icon={Mail} label="Email" value={profile.email} />
-              <InfoRow icon={MapPin} label="Adresse" value={profile.adresse} />
               <InfoRow icon={GraduationCap} label="Spécialisation à l'ENA" value={profile.specialisation_ena} />
               <InfoRow icon={GraduationCap} label="Promotion à l'ENA" value={profile.promotion_ena} />
               <InfoRow icon={GraduationCap} label="Formation initiale" value={profile.formation_initiale} />
