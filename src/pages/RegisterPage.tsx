@@ -25,6 +25,7 @@ const RegisterPage = () => {
     nom: "",
     prenoms: "",
     sexe: "Homme" as "Homme" | "Femme",
+    role_assoc: "",
     grade: "" as string,
     fonction: "",
     profession: "",
