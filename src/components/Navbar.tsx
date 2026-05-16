@@ -87,6 +87,33 @@ const Navbar = () => {
               </Button>
             )}
 
+            {session ? (
+              <>
+                <span className="hidden md:inline text-primary-foreground/90 text-xs font-sans">
+                  {session.prenoms}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-primary-foreground hover:bg-primary-foreground/10"
+                  onClick={handleLogout}
+                  title="Se déconnecter"
+                >
+                  <LogOut className="w-5 h-5" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => navigate("/connexion")}
+                title="Se connecter"
+              >
+                <LogIn className="w-5 h-5" />
+              </Button>
+            )}
+
             <Button
               size="sm"
               className="bg-accent text-accent-foreground hover:bg-accent/90 font-sans gap-1.5 hidden sm:flex"
