@@ -1,89 +1,78 @@
-## Objectif
+# Plan — Évolutions profil & authentification
 
-Corriger 4 points : (1) sélecteur pays avec drapeaux pour le téléphone, (2) appels téléphoniques corrects, (3) WhatsApp opérationnel, (4) lecture hors-ligne des profils/statistiques + inscription hors-ligne avec synchronisation automatique au retour de la connexion.
+## Décisions prises (suite au skip des questions)
 
----
+- **Rôle** : nouveau champ ajouté en haut du formulaire. **Grade conservé** mais déplacé plus bas (les deux notions sont distinctes — fonction associative vs grade administratif).
+- **Authentification** : on **garde le système actuel** (mot de passe par profil, identification via nom/prénoms), on ajoute **une page de connexion** dédiée par **email + mot de passe** (l'email du profil sert d'identifiant).
+- **Récupération** : envoi d'un **lien sécurisé** par email (token unique, expirant en 1h). Le mot de passe haché n'est jamais renvoyé.
+- **« Autre section »** : interprété comme une nouvelle section visuelle « Rôle dans l'association » dans le formulaire d'inscription/édition, séparée de la section professionnelle.
 
-## 1. Sélecteur de pays avec drapeaux (téléphone)
+## 1. Base de données (migration)
 
-**Pages concernées :** `RegisterPage.tsx`, `EditProfileModal.tsx`.
+- Création de l'enum `app_role_assoc` avec : `president`, `vice_president`, `secretaire_general`, `tresorier_principal`, `secretaire_national`, `membre_fondateur`, `membre_actif`.
+- Ajout colonne `role_assoc app_role_assoc` (nullable) sur `profiles`.
+- Création table `password_reset_tokens` (profile_id, token_hash, expires_at, used_at).
+- Activation RLS sur la nouvelle table (accès uniquement via service_role / edge function).
+- **Conservation** de la colonne `adresse` en base (suppression UI seulement, pour ne pas perdre les données existantes).
+- **Conservation** de `profession` en base (renommage UI seulement → « Emploi »).
 
-- Installer `react-phone-number-input` (gère drapeaux SVG, formatage E.164, recherche pays, validation).
-- Remplacer le champ `Input` téléphone actuel par un composant `PhoneInput` avec :
-  - Pays par défaut : Côte d'Ivoire (`CI`).
-  - Stockage en format **E.164** (ex. `+2250708773321`) dans la colonne `contact`.
-  - Style adapté à notre design system (mêmes bordures, hauteur, focus).
+## 2. Formulaires (inscription + édition)
 
-**Bénéfice :** le numéro est stocké au format international complet, ce qui résout aussi les points 2 et 3.
+- Nouvelle section **« Rôle dans l'association »** en haut, juste après l'identité, avec un `Select` listant les 7 rôles.
+- Champ **« Grade »** repositionné dans la section professionnelle (sous Fonction).
+- Champ **« Adresse »** retiré du formulaire (toujours en base).
+- Label **« Profession »** remplacé par **« Emploi »** (clé technique `profession` inchangée).
+- Nouveau champ **« Nouveau mot de passe »** (optionnel) dans `EditProfileModal` pour permettre la modification — passé via `updates.new_password` (déjà géré côté edge function `manage-profile`).
 
----
+## 3. Page de connexion `/connexion`
 
-## 2. Correction de l'appel téléphonique
+- Formulaire : email + mot de passe.
+- Edge function `login-profile` : retrouve le profil par email, vérifie le hash, renvoie l'ID + un jeton de session léger stocké en `localStorage`.
+- Lien « Mot de passe oublié ? » → `/mot-de-passe-oublie`.
+- Lien « Pas encore inscrit ? » → `/inscription`.
+- Bouton « Se déconnecter » dans la navbar quand connecté.
 
-**Fichier :** `ProfileModal.tsx` → `InfoRow` (helper `formatPhone`).
+## 4. Récupération du mot de passe
 
-Problème : la regex actuelle `replace(/^0/, "+225")` retire le `0` initial, ce qui peut donner un numéro tronqué pour les anciens enregistrements ou les pays autres que CI.
+- Page `/mot-de-passe-oublie` : saisie email → appel edge function `request-password-reset`.
+- Edge function génère un token, le stocke haché, envoie un email avec lien `/reinitialiser-mot-de-passe?token=...`.
+- Page `/reinitialiser-mot-de-passe` : saisie nouveau mot de passe → edge function `reset-password` valide le token et met à jour le hash.
+- **Infrastructure email Lovable Cloud** (transactionnel) à configurer — nécessitera la mise en place d'un domaine d'envoi.
 
-**Solution :**
-- Si le numéro commence déjà par `+` → utiliser tel quel.
-- Sinon, si commence par `00` → remplacer par `+`.
-- Sinon, si 10 chiffres commençant par `0` (format local CI) → préfixer `+225` **sans retirer le 0** (CI n'a pas de trunk prefix à supprimer).
-- Affichage formaté lisible, lien `tel:` au format E.164.
+## 5. Affichage des profils
 
----
-
-## 3. WhatsApp opérationnel
-
-Même `InfoRow` :
-- URL : `https://wa.me/<E164 sans +>` (ex. `https://wa.me/2250708773321`).
-- Ouverture via `window.open(url, "_blank", "noopener")` au lieu d'un simple `<a>` (certains `Popover` interceptent le clic sur mobile).
-- Tester aussi le schéma `whatsapp://send?phone=...` en fallback mobile.
-
----
-
-## 4. Mode hors-ligne complet
-
-### 4.a Lecture hors-ligne (profils + statistiques)
-
-- Mettre en cache les réponses `profiles_public` dans **IndexedDB** (via `idb-keyval`, léger).
-- Modifier `fetchProfiles`, `fetchProfilesByCorps`, `fetchStats` pour :
-  1. Tenter le réseau ; si succès → mettre à jour le cache puis retourner.
-  2. Si réseau indisponible → lire depuis le cache.
-- Ajouter une bannière discrète "Mode hors-ligne — données du …" quand on lit depuis le cache.
-- Étendre le Service Worker pour précacher les routes principales (`/`, `/grade/*`, `/corps/*`, `/register`).
-
-### 4.b Inscription hors-ligne (file d'attente + synchro)
-
-- Dans `RegisterPage`, détecter `navigator.onLine`.
-- Si **hors-ligne** au submit :
-  - Photo : convertir en `Blob` base64 et stocker dans IndexedDB.
-  - Pousser la soumission dans une file `pending-registrations` (IndexedDB).
-  - Toast : « Profil enregistré localement, il sera publié dès le retour de la connexion. »
-  - Naviguer vers une page de confirmation locale.
-- **Synchroniseur** (`src/lib/offline-sync.ts`) :
-  - Au démarrage de l'app + sur l'événement `online` → vider la file en appelant `register-profile` (avec upload photo si présente).
-  - Toast de succès à chaque profil synchronisé, retry exponentiel sur échec réseau.
-- Optionnel : enregistrer un Background Sync (`registration.sync.register("sync-profiles")`) avec fallback JS pour les navigateurs sans support.
+- Carte profil et `ProfileModal` : afficher le **Rôle** (badge doré au-dessus du grade quand présent).
+- Label « Profession » → « Emploi » partout en lecture.
+- Adresse retirée de l'affichage.
 
 ---
 
 ## Détails techniques
 
-- **Dépendances ajoutées :** `react-phone-number-input`, `idb-keyval`.
-- **Nouveaux fichiers :**
-  - `src/lib/offline-cache.ts` — wrapper IndexedDB pour profils/stats.
-  - `src/lib/offline-sync.ts` — file d'attente d'inscriptions + synchroniseur.
-  - `src/components/OfflineBanner.tsx` — bannière statut hors-ligne.
-- **Fichiers modifiés :**
-  - `src/pages/RegisterPage.tsx`, `src/components/EditProfileModal.tsx` — PhoneInput + soumission offline.
-  - `src/components/ProfileModal.tsx` — `formatPhone` robuste + WhatsApp via `window.open`.
-  - `src/lib/supabase-helpers.ts` — `fetch*` avec fallback cache.
-  - `public/sw.js` — précache des routes app + stratégie StaleWhileRevalidate pour `profiles_public`.
-  - `src/App.tsx` (ou `main.tsx`) — initialiser le synchroniseur, monter `OfflineBanner`.
+**Tables modifiées** : `profiles` (ajout `role_assoc`), nouvelle `password_reset_tokens`.
+
+**Edge functions créées** : `login-profile`, `request-password-reset`, `reset-password`.
+
+**Edge function modifiée** : `manage-profile` (déjà gère `new_password` → rien à faire).
+
+**Fichiers front impactés** :
+- `src/lib/supabase-helpers.ts` (constantes `ROLES_ASSOC`)
+- `src/pages/RegisterPage.tsx` (réorganisation form)
+- `src/components/EditProfileModal.tsx` (idem + nouveau mdp)
+- `src/components/ProfileCard.tsx` + `ProfileModal.tsx` (affichage rôle, masquage adresse, label Emploi)
+- Nouveau : `src/pages/LoginPage.tsx`, `ForgotPasswordPage.tsx`, `ResetPasswordPage.tsx`
+- `src/App.tsx` (routes)
+- `src/components/Navbar.tsx` (lien Connexion / Déconnexion)
+
+**Prérequis email** : la fonctionnalité email nécessite la configuration d'un domaine d'envoi via la boîte de dialogue Lovable Cloud. Sera demandée au moment de l'implémentation des emails.
 
 ---
 
-## Ce qui n'est PAS inclus
+## Ordre d'exécution
 
-- Pas de modification du backend / RLS (la file de synchro réutilise `register-profile`).
-- Pas d'édition/suppression hors-ligne (nécessite vérification mot de passe en ligne) — uniquement lecture + nouvelle inscription.
+1. Migration BD (enum + colonne + table tokens)
+2. Réorganisation formulaires + ajout Rôle + retrait Adresse + renommage Emploi
+3. Affichage profils mis à jour
+4. Page de connexion + edge function `login-profile`
+5. Configuration email + récupération/reset mot de passe
+6. Modification mot de passe dans l'édition profil
