@@ -1,8 +1,9 @@
 import { useState } from "react";
 import type { Profile } from "@/lib/supabase-helpers";
+import { ROLE_ASSOC_LABELS } from "@/lib/supabase-helpers";
 import { toE164, toWhatsappNumber } from "@/lib/phone-utils";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { User, Phone, Mail, MapPin, Briefcase, GraduationCap, Building2, Pencil, Trash2, MessageCircle } from "lucide-react";
+import { User, Phone, Mail, Briefcase, GraduationCap, Building2, Pencil, Trash2, MessageCircle, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
