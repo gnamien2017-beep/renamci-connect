@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Search, UserPlus, Home, X } from "lucide-react";
+import { Search, UserPlus, Home, X, LogIn, LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchProfiles, type Profile } from "@/lib/supabase-helpers";
+import { getSession, clearSession, useSessionListener, type MemberSession } from "@/lib/auth-session";
 import logoRenamci from "@/assets/logo-renamci.png";
 import {
   Dialog,
