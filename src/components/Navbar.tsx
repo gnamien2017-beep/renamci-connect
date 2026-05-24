@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Search, UserPlus, Home, X, LogIn, LogOut } from "lucide-react";
+import { Search, UserPlus, Home, X, LogIn, LogOut, Megaphone } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchProfiles, type Profile } from "@/lib/supabase-helpers";
@@ -71,10 +71,21 @@ const Navbar = () => {
               variant="ghost"
               size="icon"
               className="text-primary-foreground hover:bg-primary-foreground/10"
+              onClick={() => navigate("/annonces")}
+              title="Annonces"
+            >
+              <Megaphone className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => setSearchOpen(true)}
             >
               <Search className="w-5 h-5" />
             </Button>
+
+
 
             {location.pathname !== "/" && (
               <Button
