@@ -1,72 +1,78 @@
-# Plan : Espace admin (adhésions) + page Annonces publique
+# Plan — Évolutions profil & authentification
 
-Conserve tout l'existant (inscription, authentification membres, profils, rôles). Ajoute un workflow de validation des demandes et une page publique d'annonces.
+## Décisions prises (suite au skip des questions)
+
+- **Rôle** : nouveau champ ajouté en haut du formulaire. **Grade conservé** mais déplacé plus bas (les deux notions sont distinctes — fonction associative vs grade administratif).
+- **Authentification** : on **garde le système actuel** (mot de passe par profil, identification via nom/prénoms), on ajoute **une page de connexion** dédiée par **email + mot de passe** (l'email du profil sert d'identifiant).
+- **Récupération** : envoi d'un **lien sécurisé** par email (token unique, expirant en 1h). Le mot de passe haché n'est jamais renvoyé.
+- **« Autre section »** : interprété comme une nouvelle section visuelle « Rôle dans l'association » dans le formulaire d'inscription/édition, séparée de la section professionnelle.
 
 ## 1. Base de données (migration)
 
-- **Nouvelle colonne `profiles.status`** (enum `profile_status`: `pending` | `approved` | `rejected`, défaut `pending`).
-  - Les inscriptions existantes seront migrées en `approved` (pour ne rien casser).
-  - La vue publique `profiles_public` filtrera désormais `status = 'approved'` → seuls les profils acceptés apparaissent dans l'annuaire.
-- **Nouvelle table `announcements`** (titre, contenu, image_url, created_by, published, created_at).
-  - RLS : SELECT public (tout le monde lit les publiées), INSERT/UPDATE/DELETE réservé aux admins.
-- **Notifications admin** : table `admin_notifications` (type, payload jsonb, read_at, created_at) lue uniquement par les admins.
-- **Création d'un compte admin** : insertion d'une ligne dans `user_roles` (role=`admin`) liée à un user_id Supabase Auth dédié administrateur.
+- Création de l'enum `app_role_assoc` avec : `president`, `vice_president`, `secretaire_general`, `tresorier_principal`, `secretaire_national`, `membre_fondateur`, `membre_actif`.
+- Ajout colonne `role_assoc app_role_assoc` (nullable) sur `profiles`.
+- Création table `password_reset_tokens` (profile_id, token_hash, expires_at, used_at).
+- Activation RLS sur la nouvelle table (accès uniquement via service_role / edge function).
+- **Conservation** de la colonne `adresse` en base (suppression UI seulement, pour ne pas perdre les données existantes).
+- **Conservation** de `profession` en base (renommage UI seulement → « Emploi »).
 
-## 2. Authentification administrateur
+## 2. Formulaires (inscription + édition)
 
-- L'admin utilise **Supabase Auth** (email + mot de passe), distinct du système membres.
-- Page `/admin/connexion` (Supabase `signInWithPassword`).
-- Compte admin initial créé via edge function `create-admin` (à exécuter 1 fois avec un secret + email/mot de passe fournis).
-- Garde route `<AdminRoute>` qui vérifie `has_role(user.id, 'admin')`.
+- Nouvelle section **« Rôle dans l'association »** en haut, juste après l'identité, avec un `Select` listant les 7 rôles.
+- Champ **« Grade »** repositionné dans la section professionnelle (sous Fonction).
+- Champ **« Adresse »** retiré du formulaire (toujours en base).
+- Label **« Profession »** remplacé par **« Emploi »** (clé technique `profession` inchangée).
+- Nouveau champ **« Nouveau mot de passe »** (optionnel) dans `EditProfileModal` pour permettre la modification — passé via `updates.new_password` (déjà géré côté edge function `manage-profile`).
 
-## 3. Workflow de demande d'adhésion
+## 3. Page de connexion `/connexion`
 
-- L'inscription publique (`RegisterPage`) crée maintenant un profil `status = 'pending'`.
-- Après envoi → l'utilisateur voit l'écran : **« Votre demande est en cours de traitement »**.
-- Une ligne `admin_notifications` (type `new_membership`) est créée → badge "🔔 N" dans la navbar admin.
-- Le membre **ne peut pas se connecter** tant que `status ≠ 'approved'` (message : "Votre demande est en cours de traitement" ou "Désolé votre demande n'a pas été traitée").
+- Formulaire : email + mot de passe.
+- Edge function `login-profile` : retrouve le profil par email, vérifie le hash, renvoie l'ID + un jeton de session léger stocké en `localStorage`.
+- Lien « Mot de passe oublié ? » → `/mot-de-passe-oublie`.
+- Lien « Pas encore inscrit ? » → `/inscription`.
+- Bouton « Se déconnecter » dans la navbar quand connecté.
 
-## 4. Console admin (`/admin`)
+## 4. Récupération du mot de passe
 
-- **Dashboard** avec compteurs (pending / approved / rejected, total annonces).
-- **`/admin/adhesions`** : liste des demandes `pending` avec détail du profil + 2 boutons :
-  - **Accepter** → status `approved`, message in-app "Bienvenue à RENAMCI" affiché à la prochaine connexion.
-  - **Refuser** → status `rejected`, message "Désolé votre demande n'a pas été traitée".
-- Onglets : En attente / Acceptées / Refusées.
-- **`/admin/annonces`** : CRUD complet des annonces (créer / éditer / publier / supprimer, upload image dans bucket `photos`).
+- Page `/mot-de-passe-oublie` : saisie email → appel edge function `request-password-reset`.
+- Edge function génère un token, le stocke haché, envoie un email avec lien `/reinitialiser-mot-de-passe?token=...`.
+- Page `/reinitialiser-mot-de-passe` : saisie nouveau mot de passe → edge function `reset-password` valide le token et met à jour le hash.
+- **Infrastructure email Lovable Cloud** (transactionnel) à configurer — nécessitera la mise en place d'un domaine d'envoi.
 
-## 5. Page Annonces publique
+## 5. Affichage des profils
 
-- Nouvelle route `/annonces` accessible à tous (lien dans la navbar).
-- Liste des annonces publiées (titre, image, contenu, date) — design vert/blanc/or, Playfair Display, cohérent avec le site.
-- Page détail `/annonces/:id`.
+- Carte profil et `ProfileModal` : afficher le **Rôle** (badge doré au-dessus du grade quand présent).
+- Label « Profession » → « Emploi » partout en lecture.
+- Adresse retirée de l'affichage.
 
-## 6. Notifications & messages au demandeur
-
-- Au login membre (`login-profile` edge function) :
-  - Si `status = 'pending'` → renvoie `{ pending: true }` → page affiche "Votre demande est en cours de traitement".
-  - Si `status = 'rejected'` → renvoie `{ rejected: true }` → page affiche "Désolé votre demande n'a pas été traitée".
-  - Si `status = 'approved'` et c'est la 1re connexion après acceptation → toast "Bienvenue à RENAMCI 🎉".
+---
 
 ## Détails techniques
 
-**Fichiers / éléments créés :**
-- Migration SQL (enum `profile_status`, ajout colonne, tables `announcements` + `admin_notifications`, RLS, mise à jour vue `profiles_public`).
-- `src/pages/AdminLoginPage.tsx`, `src/pages/admin/AdminDashboard.tsx`, `src/pages/admin/AdminAdhesions.tsx`, `src/pages/admin/AdminAnnonces.tsx`.
-- `src/pages/AnnoncesPage.tsx`, `src/pages/AnnonceDetailPage.tsx`.
-- `src/components/AdminRoute.tsx`, `src/components/AdminLayout.tsx`.
-- `src/lib/admin-helpers.ts` (fetch demandes, accept/reject, CRUD annonces).
-- Edge function `create-admin` (bootstrap compte admin, protégée par secret).
-- Mise à jour `login-profile` (gère pending/rejected), `register-profile` (status pending + notification admin).
-- Mise à jour `Navbar.tsx` (lien Annonces + lien Admin si connecté admin).
-- Mise à jour `App.tsx` (nouvelles routes).
+**Tables modifiées** : `profiles` (ajout `role_assoc`), nouvelle `password_reset_tokens`.
 
-**Aucun fichier n'est modifié avant approbation du plan.**
+**Edge functions créées** : `login-profile`, `request-password-reset`, `reset-password`.
+
+**Edge function modifiée** : `manage-profile` (déjà gère `new_password` → rien à faire).
+
+**Fichiers front impactés** :
+- `src/lib/supabase-helpers.ts` (constantes `ROLES_ASSOC`)
+- `src/pages/RegisterPage.tsx` (réorganisation form)
+- `src/components/EditProfileModal.tsx` (idem + nouveau mdp)
+- `src/components/ProfileCard.tsx` + `ProfileModal.tsx` (affichage rôle, masquage adresse, label Emploi)
+- Nouveau : `src/pages/LoginPage.tsx`, `ForgotPasswordPage.tsx`, `ResetPasswordPage.tsx`
+- `src/App.tsx` (routes)
+- `src/components/Navbar.tsx` (lien Connexion / Déconnexion)
+
+**Prérequis email** : la fonctionnalité email nécessite la configuration d'un domaine d'envoi via la boîte de dialogue Lovable Cloud. Sera demandée au moment de l'implémentation des emails.
+
+---
 
 ## Ordre d'exécution
-1. Migration DB.
-2. Edge function `create-admin` + bootstrap du 1er compte admin (je demanderai email + mot de passe juste après approbation).
-3. Workflow inscription (status pending + notif admin).
-4. Console admin (auth, dashboard, adhésions).
-5. Module annonces (admin CRUD + page publique).
-6. Messages au demandeur côté login.
+
+1. Migration BD (enum + colonne + table tokens)
+2. Réorganisation formulaires + ajout Rôle + retrait Adresse + renommage Emploi
+3. Affichage profils mis à jour
+4. Page de connexion + edge function `login-profile`
+5. Configuration email + récupération/reset mot de passe
+6. Modification mot de passe dans l'édition profil

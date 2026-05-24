@@ -24,16 +24,9 @@ const LoginPage = () => {
       const { data, error } = await supabase.functions.invoke("login-profile", {
         body: { email: email.trim().toLowerCase(), password },
       });
-      if (data?.status === "pending") {
-        toast({ title: "Demande en attente", description: "Votre demande est en cours de traitement." });
-        navigate("/demande-en-cours");
-        return;
+      if (error || data?.error) {
+        throw new Error(data?.error || "Identifiants invalides");
       }
-      if (data?.status === "rejected") {
-        toast({ title: "Demande refusée", description: "Désolé votre demande n'a pas été traitée.", variant: "destructive" });
-        return;
-      }
-      if (error || data?.error) throw new Error(data?.error || "Identifiants invalides");
       setSession({
         profileId: data.profile.id,
         email: data.profile.email,
@@ -41,7 +34,7 @@ const LoginPage = () => {
         prenoms: data.profile.prenoms,
         password,
       });
-      toast({ title: "Bienvenue à RENAMCI 🎉", description: `Bonjour, ${data.profile.prenoms} !` });
+      toast({ title: "Connexion réussie", description: `Bienvenue, ${data.profile.prenoms} !` });
       navigate("/");
     } catch (err: any) {
       toast({ title: "Erreur", description: err.message, variant: "destructive" });

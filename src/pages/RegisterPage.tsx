@@ -131,8 +131,8 @@ const RegisterPage = () => {
         throw new Error(data?.error || error?.message || "Erreur lors de l'inscription");
       }
 
-      toast({ title: "Demande envoyée", description: "Votre demande d'adhésion est en cours de traitement." });
-      navigate(`/demande-en-cours`);
+      toast({ title: "Succès !", description: "Votre profil a été créé avec succès." });
+      navigate(`/grade/${form.grade}`);
     } catch (err: any) {
       toast({ title: "Erreur", description: err.message, variant: "destructive" });
     } finally {
