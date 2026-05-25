@@ -76,7 +76,7 @@ const MessageriePage = () => {
           .select("id, nom, prenoms, photo_url, role_assoc")
           .in("id", ids);
         const map: Record<string, Author> = {};
-        ((profs as Author[]) ?? []).forEach((p) => (map[p.id] = p));
+        ((profs as unknown as Author[]) ?? []).forEach((p) => (map[p.id] = p));
         setAuthors(map);
       }
 
@@ -106,7 +106,7 @@ const MessageriePage = () => {
               .select("id, nom, prenoms, photo_url, role_assoc")
               .eq("id", msg.profile_id)
               .maybeSingle();
-            if (data) setAuthors((a) => ({ ...a, [(data as Author).id]: data as Author }));
+            if (data) setAuthors((a) => ({ ...a, [(data as unknown as Author).id]: data as unknown as Author }));
           }
         }
       )
