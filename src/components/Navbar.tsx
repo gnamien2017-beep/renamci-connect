@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Search, UserPlus, Home, X, LogIn, LogOut } from "lucide-react";
+import { Search, UserPlus, Home, X, LogIn, LogOut, MessageCircle, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { fetchProfiles, type Profile } from "@/lib/supabase-helpers";
 import { getSession, clearSession, useSessionListener, type MemberSession } from "@/lib/auth-session";
+import { supabase } from "@/integrations/supabase/client";
 import logoRenamci from "@/assets/logo-renamci.png";
 import {
   Dialog,
@@ -20,8 +21,30 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [session, setSessionState] = useState<MemberSession | null>(() => getSession());
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => useSessionListener(() => setSessionState(getSession())), []);
+
+  // Compute unread messages for the logged-in member
+  useEffect(() => {
+    if (!session) { setUnreadCount(0); return; }
+    let cancelled = false;
+    const refresh = async () => {
+      const { data: msgs } = await supabase.from("messages").select("id, profile_id");
+      const { data: reads } = await supabase
+        .from("message_reads").select("message_id").eq("profile_id", session.profileId);
+      const readSet = new Set(((reads as any[]) ?? []).map((r) => r.message_id));
+      const count = ((msgs as any[]) ?? []).filter((m) => m.profile_id !== session.profileId && !readSet.has(m.id)).length;
+      if (!cancelled) setUnreadCount(count);
+    };
+    refresh();
+    const channel = supabase
+      .channel("nav-unread")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "message_reads" }, refresh)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, [session]);
 
   const handleLogout = () => {
     clearSession();
@@ -89,6 +112,31 @@ const Navbar = () => {
 
             {session ? (
               <>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative text-primary-foreground hover:bg-primary-foreground/10"
+                  onClick={() => navigate("/messagerie")}
+                  title="Messagerie"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-accent text-accent-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </Button>
+                {session.is_admin && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-primary-foreground hover:bg-primary-foreground/10"
+                    onClick={() => navigate("/admin/demandes")}
+                    title="Demandes d'adhésion"
+                  >
+                    <ShieldCheck className="w-5 h-5" />
+                  </Button>
+                )}
                 <span className="hidden md:inline text-primary-foreground/90 text-xs font-sans">
                   {session.prenoms}
                 </span>
