@@ -204,6 +204,7 @@ export type Database = {
           formation_initiale: string | null
           grade: Database["public"]["Enums"]["grade_type"]
           id: string
+          is_admin: boolean
           ministere: string | null
           nom: string
           password_hash: string
@@ -230,6 +231,7 @@ export type Database = {
           formation_initiale?: string | null
           grade: Database["public"]["Enums"]["grade_type"]
           id?: string
+          is_admin?: boolean
           ministere?: string | null
           nom: string
           password_hash: string
@@ -256,6 +258,7 @@ export type Database = {
           formation_initiale?: string | null
           grade?: Database["public"]["Enums"]["grade_type"]
           id?: string
+          is_admin?: boolean
           ministere?: string | null
           nom?: string
           password_hash?: string
