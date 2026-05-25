@@ -33,6 +33,7 @@ const LoginPage = () => {
         nom: data.profile.nom,
         prenoms: data.profile.prenoms,
         password,
+        is_admin: data.profile.is_admin,
       });
       toast({ title: "Connexion réussie", description: `Bienvenue, ${data.profile.prenoms} !` });
       navigate("/");
