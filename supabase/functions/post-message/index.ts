@@ -92,21 +92,6 @@ serve(async (req) => {
       });
     }
 
-    if (action === "mark_read") {
-      const { ids } = await req.json().catch(() => ({ ids: [] }));
-      // Note: re-parsing not possible; ids must come in initial body. Use messageId or messageIds.
-      return new Response(JSON.stringify({ error: "Utiliser mark_read_batch" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    if (action === "mark_read_batch") {
-      const { messageIds } = await req.json().catch(() => ({ messageIds: [] }));
-      return new Response(JSON.stringify({ error: "use body.messageIds" }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     return new Response(JSON.stringify({ error: "Action inconnue" }), {
       status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
