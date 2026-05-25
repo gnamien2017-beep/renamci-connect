@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          read_at: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          read_at?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string | null
+          published: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          published?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string | null
+          published?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       password_reset_tokens: {
         Row: {
           created_at: string
@@ -78,6 +135,7 @@ export type Database = {
           role_assoc: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe: Database["public"]["Enums"]["sex_type"]
           specialisation_ena: string | null
+          status: Database["public"]["Enums"]["profile_status"]
           updated_at: string
           user_id: string | null
           valeurs: string | null
@@ -103,6 +161,7 @@ export type Database = {
           role_assoc?: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe?: Database["public"]["Enums"]["sex_type"]
           specialisation_ena?: string | null
+          status?: Database["public"]["Enums"]["profile_status"]
           updated_at?: string
           user_id?: string | null
           valeurs?: string | null
@@ -128,6 +187,7 @@ export type Database = {
           role_assoc?: Database["public"]["Enums"]["app_role_assoc"] | null
           sexe?: Database["public"]["Enums"]["sex_type"]
           specialisation_ena?: string | null
+          status?: Database["public"]["Enums"]["profile_status"]
           updated_at?: string
           user_id?: string | null
           valeurs?: string | null
@@ -250,6 +310,7 @@ export type Database = {
         | "membre_fondateur"
         | "membre_actif"
       grade_type: "A7" | "A6" | "A5" | "A4" | "A3" | "B3"
+      profile_status: "pending" | "approved" | "rejected"
       sex_type: "Homme" | "Femme"
     }
     CompositeTypes: {
@@ -389,6 +450,7 @@ export const Constants = {
         "membre_actif",
       ],
       grade_type: ["A7", "A6", "A5", "A4", "A3", "B3"],
+      profile_status: ["pending", "approved", "rejected"],
       sex_type: ["Homme", "Femme"],
     },
   },
