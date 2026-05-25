@@ -13,6 +13,8 @@ import RegisterPage from "./pages/RegisterPage";
 import LoginPage from "./pages/LoginPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import MessageriePage from "./pages/MessageriePage";
+import AdminDemandesPage from "./pages/AdminDemandesPage";
 import NotFound from "./pages/NotFound";
 import { initOfflineSync } from "@/lib/offline-sync";
 import { toast } from "@/hooks/use-toast";
@@ -48,6 +50,8 @@ const App = () => {
             <Route path="/connexion" element={<LoginPage />} />
             <Route path="/mot-de-passe-oublie" element={<ForgotPasswordPage />} />
             <Route path="/reinitialiser-mot-de-passe" element={<ResetPasswordPage />} />
+            <Route path="/messagerie" element={<MessageriePage />} />
+            <Route path="/admin/demandes" element={<AdminDemandesPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

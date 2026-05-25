@@ -12,6 +12,7 @@ export type MemberSession = {
   nom: string;
   prenoms: string;
   password: string; // requis pour les edge functions manage-profile
+  is_admin?: boolean;
 };
 
 export function getSession(): MemberSession | null {

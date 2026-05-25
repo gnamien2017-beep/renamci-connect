@@ -71,6 +71,85 @@ export type Database = {
         }
         Relationships: []
       }
+      message_reads: {
+        Row: {
+          message_id: string
+          profile_id: string
+          read_at: string
+        }
+        Insert: {
+          message_id: string
+          profile_id: string
+          read_at?: string
+        }
+        Update: {
+          message_id?: string
+          profile_id?: string
+          read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reads_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reads_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          edited_at: string | null
+          id: string
+          profile_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          profile_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          edited_at?: string | null
+          id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       password_reset_tokens: {
         Row: {
           created_at: string
@@ -125,6 +204,7 @@ export type Database = {
           formation_initiale: string | null
           grade: Database["public"]["Enums"]["grade_type"]
           id: string
+          is_admin: boolean
           ministere: string | null
           nom: string
           password_hash: string
@@ -151,6 +231,7 @@ export type Database = {
           formation_initiale?: string | null
           grade: Database["public"]["Enums"]["grade_type"]
           id?: string
+          is_admin?: boolean
           ministere?: string | null
           nom: string
           password_hash: string
@@ -177,6 +258,7 @@ export type Database = {
           formation_initiale?: string | null
           grade?: Database["public"]["Enums"]["grade_type"]
           id?: string
+          is_admin?: boolean
           ministere?: string | null
           nom?: string
           password_hash?: string
@@ -298,6 +380,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_approved_profile: { Args: { _profile_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
