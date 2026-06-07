@@ -18,8 +18,10 @@ serve(async (req) => {
     new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   try {
-    const { profileId, password, action, announcementId, title, content, published, imageBase64, imageMime, removeImage } =
-      await req.json();
+    const {
+      profileId, password, action, announcementId, title, content, published,
+      imageBase64, imageMime, removeImage, rejectionReason,
+    } = await req.json();
     if (!profileId || !password) return json({ error: "Authentification requise" }, 401);
 
     const supabase = createClient(
@@ -43,8 +45,7 @@ serve(async (req) => {
       const ext = (imageMime.split("/")[1] || "jpg").replace("jpeg", "jpg");
       const path = `announcements/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("photos").upload(path, bytes, {
-        contentType: imageMime,
-        upsert: false,
+        contentType: imageMime, upsert: false,
       });
       if (upErr) throw upErr;
       const { data: pub } = supabase.storage.from("photos").getPublicUrl(path);
@@ -58,6 +59,7 @@ serve(async (req) => {
       const { data, error } = await supabase.from("announcements").insert({
         title: t, content: c, image_url: image_url ?? null,
         published: published !== false, created_by: profileId,
+        approval_status: "pending",
       }).select().single();
       if (error) throw error;
       return json({ success: true, announcement: data });
@@ -65,12 +67,42 @@ serve(async (req) => {
 
     if (action === "update") {
       if (!announcementId) return json({ error: "announcementId requis" }, 400);
+      const { data: current } = await supabase
+        .from("announcements").select("created_by, approval_status").eq("id", announcementId).maybeSingle();
+      if (!current) return json({ error: "Annonce introuvable" }, 404);
       const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (title !== undefined) patch.title = String(title).trim();
       if (content !== undefined) patch.content = String(content).trim();
       if (published !== undefined) patch.published = Boolean(published);
       if (image_url) patch.image_url = image_url;
       if (removeImage) patch.image_url = null;
+      // Editing content resets approval to pending (unless the editor is also re-submitting)
+      if (title !== undefined || content !== undefined || image_url || removeImage) {
+        patch.approval_status = "pending";
+        patch.approved_by = null;
+        patch.approved_at = null;
+        patch.rejection_reason = null;
+      }
+      const { data, error } = await supabase.from("announcements").update(patch).eq("id", announcementId).select().single();
+      if (error) throw error;
+      return json({ success: true, announcement: data });
+    }
+
+    if (action === "approve" || action === "reject") {
+      if (!announcementId) return json({ error: "announcementId requis" }, 400);
+      const { data: current } = await supabase
+        .from("announcements").select("created_by, approval_status").eq("id", announcementId).maybeSingle();
+      if (!current) return json({ error: "Annonce introuvable" }, 404);
+      if (current.created_by === profileId) {
+        return json({ error: "Un administrateur ne peut pas valider sa propre annonce. Un autre admin doit l'approuver." }, 403);
+      }
+      const patch: Record<string, unknown> = {
+        approval_status: action === "approve" ? "approved" : "rejected",
+        approved_by: profileId,
+        approved_at: new Date().toISOString(),
+        rejection_reason: action === "reject" ? (rejectionReason ?? null) : null,
+        updated_at: new Date().toISOString(),
+      };
       const { data, error } = await supabase.from("announcements").update(patch).eq("id", announcementId).select().single();
       if (error) throw error;
       return json({ success: true, announcement: data });
