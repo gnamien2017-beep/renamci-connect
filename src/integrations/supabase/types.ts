@@ -40,32 +40,44 @@ export type Database = {
       }
       announcements: {
         Row: {
+          approval_status: Database["public"]["Enums"]["announcement_approval"]
+          approved_at: string | null
+          approved_by: string | null
           content: string
           created_at: string
           created_by: string | null
           id: string
           image_url: string | null
           published: boolean
+          rejection_reason: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          approval_status?: Database["public"]["Enums"]["announcement_approval"]
+          approved_at?: string | null
+          approved_by?: string | null
           content: string
           created_at?: string
           created_by?: string | null
           id?: string
           image_url?: string | null
           published?: boolean
+          rejection_reason?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          approval_status?: Database["public"]["Enums"]["announcement_approval"]
+          approved_at?: string | null
+          approved_by?: string | null
           content?: string
           created_at?: string
           created_by?: string | null
           id?: string
           image_url?: string | null
           published?: boolean
+          rejection_reason?: string | null
           title?: string
           updated_at?: string
         }
@@ -383,6 +395,7 @@ export type Database = {
       is_approved_profile: { Args: { _profile_id: string }; Returns: boolean }
     }
     Enums: {
+      announcement_approval: "pending" | "approved" | "rejected"
       app_role: "admin" | "moderator" | "user"
       app_role_assoc:
         | "president"
@@ -522,6 +535,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      announcement_approval: ["pending", "approved", "rejected"],
       app_role: ["admin", "moderator", "user"],
       app_role_assoc: [
         "president",
