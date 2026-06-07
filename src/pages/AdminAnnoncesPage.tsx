@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Plus, Trash2, Eye, EyeOff, Image as ImageIcon, X, Calendar, ShieldCheck } from "lucide-react";
+import { Megaphone, Plus, Trash2, Eye, EyeOff, Image as ImageIcon, X, Calendar, ShieldCheck, Check, Clock, Ban } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+type ApprovalStatus = "pending" | "approved" | "rejected";
+
 type Announcement = {
   id: string;
   title: string;
@@ -20,6 +22,9 @@ type Announcement = {
   image_url: string | null;
   published: boolean;
   created_at: string;
+  created_by: string | null;
+  approval_status: ApprovalStatus;
+  rejection_reason: string | null;
 };
 
 const fileToBase64 = (file: File): Promise<{ b64: string; mime: string }> =>
@@ -34,6 +39,24 @@ const fileToBase64 = (file: File): Promise<{ b64: string; mime: string }> =>
     reader.readAsDataURL(file);
   });
 
+const StatusBadge = ({ status }: { status: ApprovalStatus }) => {
+  if (status === "approved") return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+      <Check className="w-3 h-3" /> Approuvée
+    </span>
+  );
+  if (status === "rejected") return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-destructive/10 text-destructive">
+      <Ban className="w-3 h-3" /> Refusée
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-accent/15 text-accent-foreground" style={{ color: "hsl(var(--accent))" }}>
+      <Clock className="w-3 h-3" /> En attente
+    </span>
+  );
+};
+
 const AdminAnnoncesPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -47,6 +70,8 @@ const AdminAnnoncesPage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<Announcement | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   useEffect(() => {
     if (!session) { navigate("/connexion"); return; }
@@ -62,7 +87,7 @@ const AdminAnnoncesPage = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("announcements")
-        .select("id, title, content, image_url, published, created_at")
+        .select("id, title, content, image_url, published, created_at, created_by, approval_status, rejection_reason")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as Announcement[]) ?? [];
@@ -70,13 +95,20 @@ const AdminAnnoncesPage = () => {
     enabled: isAdmin === true,
   });
 
+  const pendingCount = items.filter((a) => a.approval_status === "pending").length;
+
   const handleFile = (f: File | null) => {
     setImageFile(f);
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(f ? URL.createObjectURL(f) : null);
   };
 
-  const publish = async () => {
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["admin-announcements"] });
+    qc.invalidateQueries({ queryKey: ["announcements"] });
+  };
+
+  const submit = async () => {
     if (!session) return;
     if (!title.trim() || !content.trim()) {
       toast({ title: "Champs requis", description: "Titre et contenu obligatoires", variant: "destructive" });
@@ -95,15 +127,36 @@ const AdminAnnoncesPage = () => {
       }
       const { data, error } = await supabase.functions.invoke("manage-announcement", { body: payload });
       if (error || data?.error) throw new Error(data?.error || "Erreur");
-      toast({ title: "Annonce publiée", description: "Tous les membres peuvent la consulter." });
+      toast({
+        title: "Annonce soumise pour validation",
+        description: "Un autre administrateur doit l'approuver avant qu'elle soit visible des membres.",
+      });
       setTitle(""); setContent(""); handleFile(null);
-      qc.invalidateQueries({ queryKey: ["admin-announcements"] });
-      qc.invalidateQueries({ queryKey: ["announcements"] });
+      invalidate();
     } catch (err: any) {
       toast({ title: "Erreur", description: err.message, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const moderate = async (a: Announcement, action: "approve" | "reject", reason?: string) => {
+    if (!session) return;
+    const { data, error } = await supabase.functions.invoke("manage-announcement", {
+      body: {
+        profileId: session.profileId, password: session.password,
+        action, announcementId: a.id, rejectionReason: reason ?? null,
+      },
+    });
+    if (error || data?.error) {
+      toast({ title: "Action impossible", description: data?.error || "Erreur", variant: "destructive" });
+      return;
+    }
+    toast({
+      title: action === "approve" ? "Annonce approuvée" : "Annonce refusée",
+      description: action === "approve" ? "Elle est désormais visible des membres." : "L'auteur a été notifié.",
+    });
+    invalidate();
   };
 
   const togglePublished = async (a: Announcement) => {
@@ -115,8 +168,7 @@ const AdminAnnoncesPage = () => {
       toast({ title: "Erreur", description: data?.error || "Erreur", variant: "destructive" });
       return;
     }
-    qc.invalidateQueries({ queryKey: ["admin-announcements"] });
-    qc.invalidateQueries({ queryKey: ["announcements"] });
+    invalidate();
   };
 
   const doDelete = async () => {
@@ -131,8 +183,7 @@ const AdminAnnoncesPage = () => {
       return;
     }
     toast({ title: "Annonce supprimée" });
-    qc.invalidateQueries({ queryKey: ["admin-announcements"] });
-    qc.invalidateQueries({ queryKey: ["announcements"] });
+    invalidate();
   };
 
   if (isAdmin === null) return null;
@@ -157,8 +208,13 @@ const AdminAnnoncesPage = () => {
             Gestion des annonces
           </h1>
           <p className="text-primary-foreground/80 text-sm mt-1 font-sans">
-            Publiez les communications officielles destinées à l'ensemble des membres.
+            Validation à double regard&nbsp;: une annonce n'est visible des membres qu'après approbation par un second administrateur.
           </p>
+          {pendingCount > 0 && (
+            <p className="mt-2 inline-flex items-center gap-2 text-xs bg-accent text-accent-foreground px-3 py-1 rounded-full font-bold">
+              <Clock className="w-3.5 h-3.5" /> {pendingCount} annonce{pendingCount > 1 ? "s" : ""} en attente de validation
+            </p>
+          )}
         </div>
       </div>
 
@@ -166,7 +222,7 @@ const AdminAnnoncesPage = () => {
         {/* Composer */}
         <section className="bg-card border border-border rounded-2xl p-6 shadow-sm h-fit">
           <h2 className="font-serif text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-            <Plus className="w-5 h-5 text-primary" /> Nouvelle annonce
+            <Plus className="w-5 h-5 text-primary" /> Soumettre une annonce
           </h2>
           <div className="space-y-4">
             <div>
@@ -219,12 +275,15 @@ const AdminAnnoncesPage = () => {
                 </label>
               )}
             </div>
+            <p className="text-[11px] text-muted-foreground bg-muted/50 rounded-md p-2 font-sans">
+              ℹ️ Après envoi, l'annonce passe en <strong>« En attente »</strong>. Un autre administrateur doit l'approuver pour qu'elle s'affiche dans la page Annonces.
+            </p>
             <Button
-              onClick={publish}
+              onClick={submit}
               disabled={submitting}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              {submitting ? "Publication..." : "Publier l'annonce"}
+              {submitting ? "Envoi..." : "Soumettre pour validation"}
             </Button>
           </div>
         </section>
@@ -237,48 +296,92 @@ const AdminAnnoncesPage = () => {
           {isLoading ? (
             <p className="text-muted-foreground">Chargement...</p>
           ) : items.length === 0 ? (
-            <p className="text-muted-foreground text-sm font-sans">Aucune annonce publiée.</p>
+            <p className="text-muted-foreground text-sm font-sans">Aucune annonce.</p>
           ) : (
             <ul className="space-y-3">
-              {items.map((a) => (
-                <li
-                  key={a.id}
-                  className={`bg-card border rounded-xl p-4 shadow-sm transition-all ${
-                    a.published ? "border-border" : "border-dashed border-muted-foreground/30 opacity-70"
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {a.image_url && (
-                      <img src={a.image_url} alt="" className="w-16 h-16 rounded-md object-cover shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-serif font-semibold text-foreground truncate">{a.title}</h3>
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 font-sans">{a.content}</p>
-                      <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />
-                          {new Date(a.created_at).toLocaleDateString("fr-FR")}
-                        </span>
-                        <span className={a.published ? "text-primary font-semibold" : "text-muted-foreground"}>
-                          {a.published ? "Publiée" : "Brouillon"}
-                        </span>
+              {items.map((a) => {
+                const isOwn = a.created_by === session?.profileId;
+                const canModerate = a.approval_status === "pending" && !isOwn;
+                return (
+                  <li
+                    key={a.id}
+                    className={`bg-card border rounded-xl p-4 shadow-sm transition-all ${
+                      a.approval_status === "pending" ? "border-accent/40 ring-1 ring-accent/20" :
+                      a.approval_status === "rejected" ? "border-destructive/30 opacity-80" :
+                      "border-border"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {a.image_url && (
+                        <img src={a.image_url} alt="" className="w-16 h-16 rounded-md object-cover shrink-0" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <StatusBadge status={a.approval_status} />
+                          {isOwn && (
+                            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-bold">Votre soumission</span>
+                          )}
+                        </div>
+                        <h3 className="font-serif font-semibold text-foreground truncate">{a.title}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 font-sans">{a.content}</p>
+                        {a.approval_status === "rejected" && a.rejection_reason && (
+                          <p className="text-[11px] text-destructive mt-1 font-sans italic">
+                            Motif&nbsp;: {a.rejection_reason}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-3 mt-2 text-[11px] text-muted-foreground">
+                          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />
+                            {new Date(a.created_at).toLocaleDateString("fr-FR")}
+                          </span>
+                          <span className={a.published ? "text-primary font-semibold" : "text-muted-foreground"}>
+                            {a.published ? "Publiée" : "Dépubliée"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1.5 shrink-0">
+                        {canModerate && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => moderate(a, "approve")}
+                              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1"
+                            >
+                              <Check className="w-3.5 h-3.5" /> Approuver
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => { setRejectTarget(a); setRejectionReason(""); }}
+                              className="border-destructive/30 text-destructive hover:bg-destructive/10 gap-1"
+                            >
+                              <Ban className="w-3.5 h-3.5" /> Refuser
+                            </Button>
+                          </>
+                        )}
+                        {a.approval_status === "pending" && isOwn && (
+                          <p className="text-[10px] text-muted-foreground italic max-w-[120px] text-right">
+                            En attente d'un autre admin
+                          </p>
+                        )}
+                        {a.approval_status === "approved" && (
+                          <Button size="icon" variant="ghost" onClick={() => togglePublished(a)} title={a.published ? "Dépublier" : "Republier"}>
+                            {a.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </Button>
+                        )}
+                        <Button size="icon" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(a.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex flex-col gap-1.5 shrink-0">
-                      <Button size="icon" variant="ghost" onClick={() => togglePublished(a)} title={a.published ? "Dépublier" : "Publier"}>
-                        {a.published ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </Button>
-                      <Button size="icon" variant="ghost" className="text-destructive hover:bg-destructive/10" onClick={() => setDeleteId(a.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
       </div>
 
+      {/* Delete dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -291,6 +394,38 @@ const AdminAnnoncesPage = () => {
             <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={doDelete} className="bg-destructive hover:bg-destructive/90">
               Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject dialog */}
+      <AlertDialog open={!!rejectTarget} onOpenChange={(o) => !o && setRejectTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refuser cette annonce ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Indiquez un motif court — il sera transmis à l'administrateur qui l'a soumise.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Textarea
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            placeholder="Ex : Contenu à reformuler, dates à préciser..."
+            rows={3}
+            maxLength={500}
+            className="font-sans"
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (rejectTarget) moderate(rejectTarget, "reject", rejectionReason.trim() || undefined);
+                setRejectTarget(null);
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Confirmer le refus
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
