@@ -164,6 +164,70 @@ const AdminAnnoncesPage = () => {
     invalidate();
   };
 
+  // Pending items moderable by current admin (not their own)
+  const moderableItems = items.filter(
+    (a) => a.approval_status === "pending" && a.created_by !== session?.profileId,
+  );
+  const allModerableSelected =
+    moderableItems.length > 0 && moderableItems.every((a) => selected.has(a.id));
+
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allModerableSelected) setSelected(new Set());
+    else setSelected(new Set(moderableItems.map((a) => a.id)));
+  };
+
+  const runBulk = async () => {
+    if (!session || !bulkAction) return;
+    const ids = Array.from(selected).filter((id) =>
+      moderableItems.some((a) => a.id === id),
+    );
+    if (ids.length === 0) {
+      setBulkAction(null);
+      return;
+    }
+    setBulkRunning(true);
+    let ok = 0;
+    let ko = 0;
+    const reason = bulkAction === "reject" ? bulkReason.trim() || null : null;
+    await Promise.all(
+      ids.map(async (id) => {
+        const { data, error } = await supabase.functions.invoke("manage-announcement", {
+          body: {
+            profileId: session.profileId,
+            password: session.password,
+            action: bulkAction,
+            announcementId: id,
+            rejectionReason: reason,
+          },
+        });
+        if (error || data?.error) ko += 1;
+        else ok += 1;
+      }),
+    );
+    setBulkRunning(false);
+    setBulkAction(null);
+    setBulkReason("");
+    setSelected(new Set());
+    toast({
+      title:
+        bulkAction === "approve"
+          ? `${ok} annonce${ok > 1 ? "s" : ""} approuvée${ok > 1 ? "s" : ""}`
+          : `${ok} annonce${ok > 1 ? "s" : ""} refusée${ok > 1 ? "s" : ""}`,
+      description: ko > 0 ? `${ko} échec${ko > 1 ? "s" : ""} — vérifiez les annonces restantes.` : undefined,
+      variant: ko > 0 && ok === 0 ? "destructive" : "default",
+    });
+    invalidate();
+  };
+
   const togglePublished = async (a: Announcement) => {
     if (!session) return;
     const { data, error } = await supabase.functions.invoke("manage-announcement", {
