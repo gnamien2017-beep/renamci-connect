@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Plus, Trash2, Eye, EyeOff, Image as ImageIcon, X, Calendar, ShieldCheck, Check, Clock, Ban } from "lucide-react";
+import { Megaphone, Plus, Trash2, Eye, EyeOff, Image as ImageIcon, X, Calendar, ShieldCheck, Check, Clock, Ban, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/lib/auth-session";
