@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Megaphone, Plus, Trash2, Eye, EyeOff, Image as ImageIcon, X, Calendar, ShieldCheck, Check, Clock, Ban } from "lucide-react";
+import { Megaphone, Plus, Trash2, Eye, EyeOff, Image as ImageIcon, X, Calendar, ShieldCheck, Check, Clock, Ban, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getSession } from "@/lib/auth-session";
@@ -72,6 +73,10 @@ const AdminAnnoncesPage = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Announcement | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<"approve" | "reject" | null>(null);
+  const [bulkReason, setBulkReason] = useState("");
+  const [bulkRunning, setBulkRunning] = useState(false);
 
   useEffect(() => {
     if (!session) { navigate("/connexion"); return; }
@@ -155,6 +160,70 @@ const AdminAnnoncesPage = () => {
     toast({
       title: action === "approve" ? "Annonce approuvée" : "Annonce refusée",
       description: action === "approve" ? "Elle est désormais visible des membres." : "L'auteur a été notifié.",
+    });
+    invalidate();
+  };
+
+  // Pending items moderable by current admin (not their own)
+  const moderableItems = items.filter(
+    (a) => a.approval_status === "pending" && a.created_by !== session?.profileId,
+  );
+  const allModerableSelected =
+    moderableItems.length > 0 && moderableItems.every((a) => selected.has(a.id));
+
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (allModerableSelected) setSelected(new Set());
+    else setSelected(new Set(moderableItems.map((a) => a.id)));
+  };
+
+  const runBulk = async () => {
+    if (!session || !bulkAction) return;
+    const ids = Array.from(selected).filter((id) =>
+      moderableItems.some((a) => a.id === id),
+    );
+    if (ids.length === 0) {
+      setBulkAction(null);
+      return;
+    }
+    setBulkRunning(true);
+    let ok = 0;
+    let ko = 0;
+    const reason = bulkAction === "reject" ? bulkReason.trim() || null : null;
+    await Promise.all(
+      ids.map(async (id) => {
+        const { data, error } = await supabase.functions.invoke("manage-announcement", {
+          body: {
+            profileId: session.profileId,
+            password: session.password,
+            action: bulkAction,
+            announcementId: id,
+            rejectionReason: reason,
+          },
+        });
+        if (error || data?.error) ko += 1;
+        else ok += 1;
+      }),
+    );
+    setBulkRunning(false);
+    setBulkAction(null);
+    setBulkReason("");
+    setSelected(new Set());
+    toast({
+      title:
+        bulkAction === "approve"
+          ? `${ok} annonce${ok > 1 ? "s" : ""} approuvée${ok > 1 ? "s" : ""}`
+          : `${ok} annonce${ok > 1 ? "s" : ""} refusée${ok > 1 ? "s" : ""}`,
+      description: ko > 0 ? `${ko} échec${ko > 1 ? "s" : ""} — vérifiez les annonces restantes.` : undefined,
+      variant: ko > 0 && ok === 0 ? "destructive" : "default",
     });
     invalidate();
   };
@@ -290,9 +359,55 @@ const AdminAnnoncesPage = () => {
 
         {/* List */}
         <section>
-          <h2 className="font-serif text-lg font-semibold text-foreground mb-4">
-            Annonces ({items.length})
-          </h2>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h2 className="font-serif text-lg font-semibold text-foreground">
+              Annonces ({items.length})
+            </h2>
+            {moderableItems.length > 0 && (
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {allModerableSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                {allModerableSelected ? "Tout désélectionner" : `Sélectionner les ${moderableItems.length} en attente`}
+              </button>
+            )}
+          </div>
+
+          {selected.size > 0 && (
+            <div className="mb-3 flex items-center justify-between gap-2 flex-wrap bg-accent/10 border border-accent/30 rounded-lg px-3 py-2">
+              <span className="text-xs font-sans font-semibold text-foreground">
+                {selected.size} sélectionnée{selected.size > 1 ? "s" : ""}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setBulkAction("approve")}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1 h-8"
+                >
+                  <Check className="w-3.5 h-3.5" /> Approuver
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setBulkReason(""); setBulkAction("reject"); }}
+                  className="border-destructive/30 text-destructive hover:bg-destructive/10 gap-1 h-8"
+                >
+                  <Ban className="w-3.5 h-3.5" /> Refuser
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelected(new Set())}
+                  className="h-8"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <p className="text-muted-foreground">Chargement...</p>
           ) : items.length === 0 ? (
@@ -302,16 +417,27 @@ const AdminAnnoncesPage = () => {
               {items.map((a) => {
                 const isOwn = a.created_by === session?.profileId;
                 const canModerate = a.approval_status === "pending" && !isOwn;
+                const isSelected = selected.has(a.id);
                 return (
                   <li
                     key={a.id}
                     className={`bg-card border rounded-xl p-4 shadow-sm transition-all ${
+                      isSelected ? "border-primary ring-2 ring-primary/30" :
                       a.approval_status === "pending" ? "border-accent/40 ring-1 ring-accent/20" :
                       a.approval_status === "rejected" ? "border-destructive/30 opacity-80" :
                       "border-border"
                     }`}
                   >
                     <div className="flex items-start gap-3">
+                      {canModerate && (
+                        <div className="pt-1">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleOne(a.id)}
+                            aria-label="Sélectionner cette annonce"
+                          />
+                        </div>
+                      )}
                       {a.image_url && (
                         <img src={a.image_url} alt="" className="w-16 h-16 rounded-md object-cover shrink-0" />
                       )}
@@ -426,6 +552,45 @@ const AdminAnnoncesPage = () => {
               className="bg-destructive hover:bg-destructive/90"
             >
               Confirmer le refus
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk action dialog */}
+      <AlertDialog open={!!bulkAction} onOpenChange={(o) => { if (!o && !bulkRunning) { setBulkAction(null); setBulkReason(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkAction === "approve"
+                ? `Approuver ${selected.size} annonce${selected.size > 1 ? "s" : ""} ?`
+                : `Refuser ${selected.size} annonce${selected.size > 1 ? "s" : ""} ?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkAction === "approve"
+                ? "Les annonces sélectionnées deviendront immédiatement visibles des membres."
+                : "Indiquez un motif commun — il sera transmis aux auteurs des annonces refusées."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {bulkAction === "reject" && (
+            <Textarea
+              value={bulkReason}
+              onChange={(e) => setBulkReason(e.target.value)}
+              placeholder="Ex : Contenu à reformuler, dates à préciser..."
+              rows={3}
+              maxLength={500}
+              className="font-sans"
+              disabled={bulkRunning}
+            />
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkRunning}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); runBulk(); }}
+              disabled={bulkRunning}
+              className={bulkAction === "reject" ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"}
+            >
+              {bulkRunning ? "Traitement..." : bulkAction === "approve" ? "Approuver tout" : "Refuser tout"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
