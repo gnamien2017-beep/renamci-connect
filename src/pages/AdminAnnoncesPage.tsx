@@ -73,6 +73,10 @@ const AdminAnnoncesPage = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [rejectTarget, setRejectTarget] = useState<Announcement | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<"approve" | "reject" | null>(null);
+  const [bulkReason, setBulkReason] = useState("");
+  const [bulkRunning, setBulkRunning] = useState(false);
 
   useEffect(() => {
     if (!session) { navigate("/connexion"); return; }
