@@ -438,6 +438,7 @@ const AdminAnnoncesPage = () => {
                           />
                         </div>
                       )}
+                      {a.image_url && (
                         <img src={a.image_url} alt="" className="w-16 h-16 rounded-md object-cover shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
