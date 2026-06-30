@@ -359,9 +359,55 @@ const AdminAnnoncesPage = () => {
 
         {/* List */}
         <section>
-          <h2 className="font-serif text-lg font-semibold text-foreground mb-4">
-            Annonces ({items.length})
-          </h2>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+            <h2 className="font-serif text-lg font-semibold text-foreground">
+              Annonces ({items.length})
+            </h2>
+            {moderableItems.length > 0 && (
+              <button
+                type="button"
+                onClick={toggleAll}
+                className="inline-flex items-center gap-1.5 text-xs font-sans font-semibold text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {allModerableSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                {allModerableSelected ? "Tout désélectionner" : `Sélectionner les ${moderableItems.length} en attente`}
+              </button>
+            )}
+          </div>
+
+          {selected.size > 0 && (
+            <div className="mb-3 flex items-center justify-between gap-2 flex-wrap bg-accent/10 border border-accent/30 rounded-lg px-3 py-2">
+              <span className="text-xs font-sans font-semibold text-foreground">
+                {selected.size} sélectionnée{selected.size > 1 ? "s" : ""}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setBulkAction("approve")}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1 h-8"
+                >
+                  <Check className="w-3.5 h-3.5" /> Approuver
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setBulkReason(""); setBulkAction("reject"); }}
+                  className="border-destructive/30 text-destructive hover:bg-destructive/10 gap-1 h-8"
+                >
+                  <Ban className="w-3.5 h-3.5" /> Refuser
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setSelected(new Set())}
+                  className="h-8"
+                >
+                  Annuler
+                </Button>
+              </div>
+            </div>
+          )}
+
           {isLoading ? (
             <p className="text-muted-foreground">Chargement...</p>
           ) : items.length === 0 ? (
@@ -371,17 +417,27 @@ const AdminAnnoncesPage = () => {
               {items.map((a) => {
                 const isOwn = a.created_by === session?.profileId;
                 const canModerate = a.approval_status === "pending" && !isOwn;
+                const isSelected = selected.has(a.id);
                 return (
                   <li
                     key={a.id}
                     className={`bg-card border rounded-xl p-4 shadow-sm transition-all ${
+                      isSelected ? "border-primary ring-2 ring-primary/30" :
                       a.approval_status === "pending" ? "border-accent/40 ring-1 ring-accent/20" :
                       a.approval_status === "rejected" ? "border-destructive/30 opacity-80" :
                       "border-border"
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      {a.image_url && (
+                      {canModerate && (
+                        <div className="pt-1">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleOne(a.id)}
+                            aria-label="Sélectionner cette annonce"
+                          />
+                        </div>
+                      )}
                         <img src={a.image_url} alt="" className="w-16 h-16 rounded-md object-cover shrink-0" />
                       )}
                       <div className="flex-1 min-w-0">
