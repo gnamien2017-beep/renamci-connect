@@ -556,6 +556,45 @@ const AdminAnnoncesPage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Bulk action dialog */}
+      <AlertDialog open={!!bulkAction} onOpenChange={(o) => { if (!o && !bulkRunning) { setBulkAction(null); setBulkReason(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {bulkAction === "approve"
+                ? `Approuver ${selected.size} annonce${selected.size > 1 ? "s" : ""} ?`
+                : `Refuser ${selected.size} annonce${selected.size > 1 ? "s" : ""} ?`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {bulkAction === "approve"
+                ? "Les annonces sélectionnées deviendront immédiatement visibles des membres."
+                : "Indiquez un motif commun — il sera transmis aux auteurs des annonces refusées."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {bulkAction === "reject" && (
+            <Textarea
+              value={bulkReason}
+              onChange={(e) => setBulkReason(e.target.value)}
+              placeholder="Ex : Contenu à reformuler, dates à préciser..."
+              rows={3}
+              maxLength={500}
+              className="font-sans"
+              disabled={bulkRunning}
+            />
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkRunning}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); runBulk(); }}
+              disabled={bulkRunning}
+              className={bulkAction === "reject" ? "bg-destructive hover:bg-destructive/90" : "bg-primary hover:bg-primary/90"}
+            >
+              {bulkRunning ? "Traitement..." : bulkAction === "approve" ? "Approuver tout" : "Refuser tout"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
